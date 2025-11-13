@@ -1,0 +1,23 @@
+{
+  "name": "final-year-project",
+  "version": "1.0.0",
+  "description": "FYP Package",
+  "main": "homepage.js",
+  "scripts": {
+    "test": "hello world"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JasonOS03/Final-Year-Project.git"
+  },
+  "author": "Jason O'Sullivan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JasonOS03/Final-Year-Project/issues"
+  },
+  "homepage": "https://github.com/JasonOS03/Final-Year-Project#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "nano": "^11.0.3"
+  }
+}
