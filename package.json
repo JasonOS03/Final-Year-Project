@@ -19,6 +19,7 @@
   "dependencies": {
     "@huggingface/inference": "^4.13.2",
     "express": "^5.1.0",
-    "nano": "^11.0.3"
+    "nano": "^11.0.3",
+    "node-fetch": "^2.7.0"
   }
 }
