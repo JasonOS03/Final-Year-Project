@@ -1,9 +1,10 @@
 
 const express = require("express");
 const fetch = require("node-fetch");
+require("dotenv").config();
 const nano = require("nano");
 const app = express();
-const couch_database = nano('http://admin:Jasonantony3@127.0.0.1:5984')
+const couch_database = nano(process.env.COUCHDB_URL);
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
@@ -18,7 +19,7 @@ app.use(express.static("public"));
         const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
-            "Authorization": "Bearer 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",
+            "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:3000", // or your deployed domain
             "X-Title": "SaaS Idea Generator"
