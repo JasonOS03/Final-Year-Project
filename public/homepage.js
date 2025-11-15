@@ -1,5 +1,6 @@
 const user_form = document.getElementById("prompt_form");
 const input = document.getElementById("promptbox");
+const response_container = document.getElementById("container");
 
 user_form.addEventListener("submit", async (e)=>{
     e.preventDefault();
@@ -16,6 +17,8 @@ const response = await fetch("/submit-prompt",
 
 })
     const server_response = await response.json();
+    const trimmed_response = server_response.output;
+    response_container.innerHTML = trimmed_response.trim();
     console.log(server_response);
 }catch(err)
 {
