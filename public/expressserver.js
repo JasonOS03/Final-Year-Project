@@ -10,6 +10,36 @@ app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
 app.use(express.static("public"));
 
+    app.get("/retrieve-recommendations", async(request,response)=>
+    {
+        try{
+        
+            const query = await the_database.find({
+                selector:
+                {
+                    user_prompt: {"$exists": true }
+                },
+                fields:
+                [
+                    "the_output"
+                ],
+                sort:
+                 [
+                    { "_id": "desc" }
+                 ],
+                    limit: 1
+                
+            });
+            const retrieved_response = query.docs[0];
+           response.json({ output: retrieved_response.the_output });
+           
+
+        }catch(err){
+            console.log("failed to retrieve recommendations from the database",err);
+            return;
+        };
+    });
+
     app.post("/submit-prompt",  async (request,response)=>{
         const user_prompt = request.body.user_prompt.trim();
     
@@ -21,7 +51,7 @@ app.use(express.static("public"));
             headers: {
             "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
             "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:3000", // or your deployed domain
+            "HTTP-Referer": "http://localhost:3000", 
             "X-Title": "SaaS Idea Generator"
             
             },
@@ -34,9 +64,9 @@ app.use(express.static("public"));
 
             if (!resp.ok) 
     {
-        const errorText = await resp.text();
-        console.error("Model API error:", errorText);
-        return response.status(resp.status).json({ error: errorText });
+        const error_text = await resp.text();
+        console.error("Model API error:", error_text);
+        return response.status(resp.status).json({ error: error_text });
     }
 
         const result = await resp.json();
