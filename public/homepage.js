@@ -50,7 +50,7 @@ const response = await fetch("/submit-prompt",
     const server_response = await response.json();
     const trimmed_response = server_response.output; //  extract output field from response
     response_text.innerHTML = 
-    trimmed_response.trim(); // replace the current HTML text with the response
+    trimmed_response.trim().replace(/"/g, ""); // replace the current HTML text with the response
     console.log(server_response);
 }catch(err)
 {
