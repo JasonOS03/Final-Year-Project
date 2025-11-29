@@ -74,7 +74,7 @@ app.use(express.static("public"));
 
         });
 
-            if (!resp.ok) 
+    if (!resp.ok) 
     {
         const error_text = await resp.text();
         console.error("Model API error:", error_text);

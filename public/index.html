@@ -7,18 +7,18 @@
 </head>
 <body>
     <!--Homepage header-->
-<h1 class = "text-center bg-success text-white p-2 rounded">Welcome to GenSaaS!</h1>
+<h1 class = "text-center bg-success text-white p-2 rounded" aria-label = "app heading">Welcome to GenSaaS!</h1>
 <!--defines a form allowing for user inputs-->
 <form id = "prompt_form" class = " text-center rounded p-2">
-    <label>Enter an idea:</label>
+    <label aria-label = "Enter an idea">Enter an idea:</label>
     <!--allows the user to input a prompt-->
     <input type = "text" name = "promptbox" id = "promptbox" 
-    placeholder="Please enter a product idea">
+    placeholder="Please enter a product idea" aria-label = "prompt input box">
     <button id = "submit_button" 
-    class = "bg-warning text-center text-black rounded p-1">Submit</button>
+    class = "bg-warning text-center text-black rounded p-1" aria-label="Submit Button">Submit</button>
 </form>
 <br><br>
-<h2 class = "text-center text-black p-2">Recommendations</h2>
+<h2 class = "text-center text-black p-2" aria-label = "Recommendations">Recommendations</h2>
 <!--defines a container for holding the Server response-->
 <div class = "container">
 <div class = "row justify-content-center">
