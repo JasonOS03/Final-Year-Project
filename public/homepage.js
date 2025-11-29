@@ -15,7 +15,7 @@ try{
     const retrieved_data = await retrieval.json();
     const retrieved_output = JSON.parse(retrieved_data.output);
     const response_content = retrieved_output.choices[0].message.content;
-    response_text.innerHTML = response_content.trim();
+    response_text.innerHTML = response_content.trim().replace(/"/g, ""); // remove double quotes from the response
 }catch(err)
 {
     console.log("failed to retrieve recommendation");
