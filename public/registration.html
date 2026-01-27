@@ -6,112 +6,122 @@
     <title>Registration page</title>
 </head>
 <body>
-    <h1>Register</h1>
-    <p1>Please fill in the following fields: </p1>
-    <p2>Note: required fields are marked with a *</p2>
+    <h1 class = "text-center">Register</h1>
+    <p class = "text-center">Please fill in the following fields: </p1>
+    <p class = "text-center">Note: required fields are marked with a *</p2>
 
     <div class = "container">
-        <div class = "row">
-            <div id = "personal_details_div" class = "col-md-6 bg-success text-center rounded p-4">
-                <h2 class = "bg-warning text-black text-center p-2" >Section 1: Personal Details</h2>
+        <div class = "row justify-content-center">
+            <div id = "personal_details_div" class = "col-md-8 bg-success text-center rounded p-4">
+                <h2 class = "text-black text-center" >Section 1: Personal Details</h2>
                 <br><br>
                 <label> Username: </label>
-                <input class = "bg-white" type = "text" id = "register_uname" placeholder="Please enter a username" required>
+                <input class = "bg-white p-2" type = "text" id = "register_uname" placeholder="Please enter a username" required>
 
                 <label>Password: </label>
-                <input class = "bg-white" type = "text" id = "register_password" placeholder="Please enter a password" required>
+                <input class = "bg-white p-2" type = "text" id = "register_password" placeholder="Please enter a password" required>
 
                 <label>Email: </label>
-                <input class = "bg-white" type = "email" id = "register_email" placeholder="Please enter an email" required>
+                <input class = "bg-white p-2" type = "email" id = "register_email" placeholder="Please enter an email" required>
             
             </div>
         </div>
     </div>
     <br><br>
-    <div id = "idea_list_div">
-        <h3>Section 2: Idea List</h3>
-        <br><br>
-        <label>Idea 1: </label>
-        <input type = "text" placeholder = "Please enter a product/service idea">
+    <div class = "container">
+        <div class = "row justify-content-center">
+            <div id = "idea_list_div" class = " col-md-8 bg-info text-center rounded p-4">
+                <h3 class = "text-center text-black">Section 2: Idea List</h3>
+                <br><br>
+                <label class = "text-black">Idea 1: </label>
+                <input class = "p-2" type = "text" placeholder = "Please enter a product/service idea">
 
-        <label>Idea 2: </label>
-        <input type = "text" placeholder = "Please enter a product/service idea">
+                <label class = "text-black">Idea 2: </label>
+                <input class = "p-2" type = "text" placeholder = "Please enter a product/service idea">
 
-        <label>Idea 3: </label>
-        <input type = "text" placeholder = "Please enter a product/service idea">
+                <label class = "text-black">Idea 3: </label>
+                <input class = "p-2" type = "text" placeholder = "Please enter a product/service idea">
 
-        <button id = "add_ideas_button">+</button>
+                <button id = "add_ideas_button">+</button>
 
 
+            </div>
+        </div>
     </div>
-    <div id = "product_portfolio_div">
-        <h4>Section 3: Product Portfolio</h4>
-        <div>
-            <p3>Product 1</p3>
-            <br><br>
+    <br><br>
+    <div class = "container">
+        <div class = "row justify-content-center">
+            <div id = "product_portfolio_div" class = " col-md-8 bg-warning text-center rounded p-4">
+                <h4 class = "text-center text-black">Section 3: Product Portfolio</h4>
+                <div>
+                    <p3 class = "text-center text-black">Product 1</p3>
+                    <br><br>
 
-            <p4>For each option below, select all that apply to your business</p4>
+                    <p4 class = "text-center text-black">For each option below, select all that apply to your business</p4>
 
-            <br><br>
-            <label> Description: </label>
-            <input type = "text" id= "product_description">
+                    <br><br>
+                    <label class = "text-center text-black"> Description: </label>
+                    <input class = "p-2" type = "text" id= "product_description">
 
-            <label>Subscription types: </label>
+                    <label class = "text-center text-black">Subscription types: </label>
 
-            <input type = "checkbox" id = "payg">
-            <label for = "payg">Pay-as-you-go</label>
+                    <input class = "p-2" type = "checkbox" id = "payg">
+                    <label class = "text-center text-black" for = "payg">Pay-as-you-go</label>
 
-            <input type = "checkbox" id = "free_tier">
-            <label for = "free_tier">Free Tier</label>
+                    <input class = "p-2" type = "checkbox" id = "free_tier">
+                    <label class = "text-center text-black" for = "free_tier">Free Tier</label>
 
-            <input type = "checkbox" id = "tiered_pricing">
-            <label for = "tiered_pricing">Tiered Pricing</label>
+                    <input type = "checkbox" id = "tiered_pricing">
+                    <label class = "text-center text-black" for = "tiered_pricing">Tiered Pricing</label>
 
-            <input type = "checkbox" id = "weekly_sub">
-            <label for = "weekly_sub">Weekly Subscription</label>
+                    <input class = "p-2" type = "checkbox" id = "weekly_sub">
+                    <label class = "text-center text-black" for = "weekly_sub">Weekly Subscription</label>
 
-            <input type = "checkbox" id = "monthly_sub">
-            <label for = "weekly_sub">Monthly Subscription</label>
+                    <input class = "p-2" type = "checkbox" id = "monthly_sub">
+                    <label class = "text-center text-black" for = "weekly_sub">Monthly Subscription</label>
 
-            <input type = "checkbox" id = "monthly_sub">
-            <label for = "weekly_sub">Annual Subscription</label>
+                    <input class = "p-2" type = "checkbox" id = "monthly_sub">
+                    <label class = "text-center text-black" for = "weekly_sub">Annual Subscription</label>
 
-            <label>Prices: </label>
-            <input type = "text" id = "product_price">
+                    <label class = "text-center text-black">Prices: </label>
+                    <input class = "p-2" type = "text" id = "product_price">
 
-            <label>Price Range: </label>
-            <input type = "range" id = "price_range" min = "0" max = "5000" step="50" value="0">
+                    <label class = "text-center text-black">Price Range: </label>
+                    <input class = "p-2" type = "range" id = "price_range" min = "0" max = "5000" step="50" value="0">
 
-            <label>Industries: </label>
-            
-            <input type = "checkbox" id = "marketing">
-            <label for = "marketing">Marketing</label>
+                    <div class = "form-check">
+                    <label class = "text-center text-black form-check-label">Industries: </label>
+                    
+                    <input class = "form-check-input" type = "checkbox" id = "marketing">
+                    <label class = "text-center text-black form-check-label" for = "marketing">Marketing</label>
 
-            <input type = "checkbox" id = "sales">
-            <label for = "sales">Sales & CRM</label>
+                    <input class = "p-2" type = "checkbox" id = "sales">
+                    <label class = "text-center text-black" for = "sales">Sales & CRM</label>
 
-            <input type = "checkbox" id = "analytics">
-            <label for = "marketing">Analytics</label>
+                    <input class = "p-2" type = "checkbox" id = "analytics">
+                    <label class = "text-center text-black" for = "marketing">Analytics</label>
 
-            <input type = "checkbox" id = "cyber_security">
-            <label for = "cyber_security">Cybersecurity</label>
+                    <input class = "p-2" type = "checkbox" id = "cyber_security">
+                    <label class = "text-center text-black" for = "cyber_security">Cybersecurity</label>
 
-            <input type = "checkbox" id = "financial">
-            <label for = "financial">Financial Tech</label>
+                    <input class = "p-2" type = "checkbox" id = "financial">
+                    <label class = "text-center text-black" for = "financial">Financial Tech</label>
 
-            <input type = "checkbox" id = "HR">
-            <label for = "HR">HR</label>
+                    <input class = "p-2" type = "checkbox" id = "HR">
+                    <label class = "text-center text-black" for = "HR">HR</label>
 
-            <input type = "checkbox" id = "collab_tools">
-            <label for = "collab_tools">Collaborative Tools</label>
+                    <input class = "p-2" type = "checkbox" id = "collab_tools">
+                    <label class = "text-center text-black" for = "collab_tools">Collaborative Tools</label>
 
-            <input type = "checkbox" id = "other_selection">
-            <label for = "other_selection">Other</label>
-
-
-
+                    <input class = "p-2" type = "checkbox" id = "other_selection">
+                    <label class = "text-center text-black" for = "other_selection">Other</label>
+                    </div>
 
 
+
+
+                </div>
+            </div>
         </div>
     </div>
 
