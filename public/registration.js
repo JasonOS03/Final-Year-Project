@@ -6,6 +6,7 @@ const product_portfolio = document.getElementById("product_portfolio_div");
 const idea_list =  document.getElementById("idea_list_div");
 const add_ideas_button = document.getElementById("add_ideas_button");
 const add_products_button =  document.getElementById("add_products_button");
+const register_button = document.getElementById("register_button");
 
 
 function validate_username()
@@ -41,7 +42,7 @@ add_ideas_button.addEventListener("click",()=>
      label.textContent = "Idea " + ++idea_number;
 
      const idea_input = document.createElement("input");
-     idea_input.className = "form-control mb-2";
+     idea_input.className = "form-control mb-2 input-idea";
      idea_input.type = text;
      idea_input.placeholder = "Please enter a product/service idea";
 
@@ -72,4 +73,69 @@ add_products_button.addEventListener("click",()=>{
 
 })
 
+register_button.addEventListener("click",async (e)=>{
+    e.preventDefault();
+
+    validate_password();
+    validate_username();
+    const u_name = document.getElementById("register_uname").value;
+    const email = document.getElementById("register_email").value;
+    const password = document.getElementById("register_password").value;
+    
+
+
+    try{
+         const registration_details = await fetch("/register_details",{
+            method: "POST",
+            headers:
+            {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(
+            {
+                username : u_name,
+                password : password,
+                email : email
+            })
+
+           
+         })
+         const response = await registration_details.json();
+         console.log(response);
+    }
+    catch(error)
+    {
+        console.error("failed to send personal details to the backend")
+    }
+
+    const ideas = document.querySelectorAll(".input-idea");
+    const idea_array = [];
+    ideas.forEach(input =>{
+        idea_array.push(input.value);
+
+    });
+
+    try{
+         const idea_list_details = await fetch("/idea_details",{
+            method: "POST",
+            headers:
+            {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(
+            {
+                label : label,
+                input : input,
+            })
+
+           
+         })
+         const response = await idea_list_details.json();
+         console.log(response);
+    }
+    catch(error)
+    {
+        console.error("failed to idea list to the backend to the backend")
+    }
+})
 
