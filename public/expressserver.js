@@ -112,3 +112,58 @@ app.use(express.static("public"));
     }
     );
 
+    app.post("/register_details", async (request,response)=>
+    {
+        const username = request.body.username;
+        const password = request.body.password;
+        const email = request.body.email;
+        try
+        {
+            await the_database.insert({username:username,password:password,email:email});
+            console.log("Inserted user's personal details into the database");
+            response.json({success: true, message: "data saved successfully"})
+        }
+        catch(err)
+        {
+            console.error("error inserting the data into the database",err);
+            response.status(400).end("data unsuccessfully inserted into database");
+        }
+    })
+
+    app.post("/idea_details", async (request,response)=>
+    {
+        const ideas = request.body.ideas;
+        const username = request.body.username;
+        try
+        {
+            await the_database.insert({username:username,ideas:ideas});
+            console.log("Inserted user's idea list into the database");
+            response.json({success: true, message: "data saved successfully"})
+        }
+        catch(err)
+        {
+            console.error("error inserting the data into the database",err);
+            response.status(400).end("data unsuccessfully inserted into database");
+        }
+    })
+
+    app.post("/product_details", async (request,response)=>
+    {
+        const products = request.body.products
+        const username = request.body.username;
+        try
+        {
+            await the_database.insert({username:username,products:products});
+            console.log("Inserted user's product portfolio into the database");
+            response.json({success: true, message: "data saved successfully"})
+        }
+        catch(err)
+        {
+            console.error("error inserting the data into the database",err);
+            response.status(400).end("data unsuccessfully inserted into database");
+        }
+    })
+
+
+
+
