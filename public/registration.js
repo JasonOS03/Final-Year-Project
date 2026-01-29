@@ -124,8 +124,7 @@ register_button.addEventListener("click",async (e)=>{
             },
             body: JSON.stringify(
             {
-                label : label,
-                input : input,
+               ideas: idea_array
             })
 
            
@@ -135,7 +134,72 @@ register_button.addEventListener("click",async (e)=>{
     }
     catch(error)
     {
-        console.error("failed to idea list to the backend to the backend")
+        console.error("failed to idea list to the backend to the backend");
     }
+  
+
+   
+  
+    product_array = []
+    const products = document.querySelectorAll(".individual-product");
+
+    products.forEach(product_block => {
+
+        const industries_array = [];
+        const industries = product_block.querySelectorAll(".industries-checkbox");
+        industries.forEach(industry => {
+            if(industry.checked)
+            {
+                industries_array.push(industry.id);
+            }
+        });
+
+        const subscriptions_array = []
+        const subscriptions = product_block.querySelectorAll(".subscription-checkbox");
+        subscriptions.forEach(sub =>{
+            if(sub.checked)
+            {
+            subscriptions_array.push(sub.id);
+            }
+        });
+
+
+
+        const product = {
+        description : product_block.querySelector(".product_description").value,
+        subscription_types : subscriptions_array,
+        prices : product_block.querySelector(".product_price").value,
+        price_range : product_block.getElementById(".price_range").value,
+        industries : industries_array
+
+        };
+        product_array.push(product);
+        
+    });
+
+    try{
+         const product_details = await fetch("/product_details",{
+            method: "POST",
+            headers:
+            {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(
+            {
+               products : product_array
+            })
+
+           
+         })
+         const response = await product_details.json();
+         console.log(response);
+    }
+    catch(error)
+    {
+        console.error("failed to send product portfolio to the backend");
+    }
+
+
+
 })
 
