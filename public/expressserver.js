@@ -5,10 +5,40 @@ require("dotenv").config();
 const nano = require("nano");
 const app = express();
 const couch_database = nano(process.env.COUCHDB_URL);
+const sessions = require("express-session");
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
 app.use(express.static("public"));
+
+    app.use(sessions({
+        secret : "the-secret-key",
+        saveUninitialized : false,
+        resave : false,
+        cookie : {secure:false}
+    }));
+
+    app.post("/user_login", async (request,response) => {
+        
+        try
+        {
+            const match = await the_database.findOne({username:request.body.username,password:request.body.password});
+            if(match)
+            {
+                 request.session.username = username;
+                 return response.json({success:true , message:"found matching username and password"});
+            }
+            else
+            {
+                return response.json({success:false,message:"no matching username and password found"});
+            }
+        }
+        catch(err)
+        {
+            console.log("failed to retrieve username and password",err);
+            response.status(500).end("error retrieving data");
+        }
+    })
 
     // retrieve the latest recommendation from the database
     app.get("/retrieve-recommendations", async(request,response)=>
@@ -143,7 +173,7 @@ app.use(express.static("public"));
         catch(err)
         {
             console.error("error inserting the data into the database",err);
-            response.status(400).end("data unsuccessfully inserted into database");
+            response.status(500).end("data unsuccessfully inserted into database");
         }
     })
 
