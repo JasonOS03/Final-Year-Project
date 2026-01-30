@@ -1,5 +1,3 @@
-const { text } = require("express");
-
 const email = document.getElementById("register_email").value;
 const error_section  = document.getElementById("error_text")
 const product_portfolio = document.getElementById("product_portfolio_div");
@@ -23,7 +21,7 @@ function validate_username()
 function validate_password()
 {
     const password = document.getElementById("register_password").value;
-    const regex = "^[A-Za-z](?=.*\d).{9,}$";
+    const regex = /^[A-Za-z](?=.*\d).{9,}$/;
     const matching =  regex.test(password);
 
     if(!matching)
@@ -34,20 +32,21 @@ function validate_password()
     return true;
 }
 
+let idea_number = 3;
+
 add_ideas_button.addEventListener("click",()=>
 {
-     let idea_number = 3;
      const label = document.createElement("label");
      label.className = "text-black form-label";
      label.textContent = "Idea " + ++idea_number;
 
      const idea_input = document.createElement("input");
      idea_input.className = "form-control mb-2 input-idea";
-     idea_input.type = text;
+     idea_input.type = "text";
      idea_input.placeholder = "Please enter a product/service idea";
 
      idea_list.appendChild(label);
-     idea_list.appendChild(input);
+     idea_list.appendChild(idea_input);
 }
 )
 
@@ -56,12 +55,12 @@ add_products_button.addEventListener("click",()=>{
     const product = document.querySelector(".individual-product");
     const duplicate = product.cloneNode(true);  
 
-    duplicate.querySelector("p3").textContent = "Product " + ++product_count
+    duplicate.querySelector(".product-header").textContent = "Product " + ++product_count
 
     duplicate.querySelectorAll("input").forEach(input => {
         if(input.type === "text")
         {
-            input.textContent = " ";
+            input.value = " ";
         }
         else if(input.type === "checkbox")
         {
@@ -76,8 +75,11 @@ add_products_button.addEventListener("click",()=>{
 register_button.addEventListener("click",async (e)=>{
     e.preventDefault();
 
-    validate_password();
-    validate_username();
+    if(!validate_password || !validate_username)
+    {
+        console.log("unable to register, username or password invalid");
+        return;
+    }
     const u_name = document.getElementById("register_uname").value;
     const email = document.getElementById("register_email").value;
     const password = document.getElementById("register_password").value;
@@ -124,6 +126,7 @@ register_button.addEventListener("click",async (e)=>{
             },
             body: JSON.stringify(
             {
+               username:u_name,
                ideas: idea_array
             })
 
@@ -169,7 +172,7 @@ register_button.addEventListener("click",async (e)=>{
         description : product_block.querySelector(".product_description").value,
         subscription_types : subscriptions_array,
         prices : product_block.querySelector(".product_price").value,
-        price_range : product_block.getElementById(".price_range").value,
+        price_range : product_block.querySelector(".price_range").value,
         industries : industries_array
 
         };
@@ -186,6 +189,7 @@ register_button.addEventListener("click",async (e)=>{
             },
             body: JSON.stringify(
             {
+               username:u_name,
                products : product_array
             })
 
