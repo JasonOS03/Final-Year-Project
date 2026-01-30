@@ -1,15 +1,15 @@
-const email = document.getElementById("register_email").value;
 const error_section  = document.getElementById("error_text")
 const product_portfolio = document.getElementById("product_portfolio_div");
 const idea_list =  document.getElementById("idea_list_div");
 const add_ideas_button = document.getElementById("add_ideas_button");
-const add_products_button =  document.getElementById("add_products_button");
+const add_products_button =  document.getElementById("add_product");
 const register_button = document.getElementById("register_button");
+
 
 
 function validate_username()
 {
-    const u_name = document.getElementById("register_uname").value;
+    const u_name = document.getElementById("username").value;
     if (u_name.length < 8)
     {
         error_section.innerHTML = `Invalid username length, username must be at least 8 letters`;
@@ -20,7 +20,7 @@ function validate_username()
 
 function validate_password()
 {
-    const password = document.getElementById("register_password").value;
+    const password = document.getElementById("password").value;
     const regex = /^[A-Za-z](?=.*\d).{9,}$/;
     const matching =  regex.test(password);
 
@@ -60,7 +60,7 @@ add_products_button.addEventListener("click",()=>{
     duplicate.querySelectorAll("input").forEach(input => {
         if(input.type === "text")
         {
-            input.value = " ";
+            input.value = "";
         }
         else if(input.type === "checkbox")
         {
@@ -68,14 +68,14 @@ add_products_button.addEventListener("click",()=>{
         }
     });
 
-    product_portfolio.insertBefore(duplicate,add_products_button);
+    product_portfolio.appendChild(duplicate);
 
 })
 
 register_button.addEventListener("click",async (e)=>{
     e.preventDefault();
 
-    if(!validate_password || !validate_username)
+    if(!validate_password() || !validate_username())
     {
         console.log("unable to register, username or password invalid");
         return;
