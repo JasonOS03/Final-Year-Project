@@ -22,16 +22,20 @@ app.use(express.static("public"));
         
         try
         {
-            const match = await the_database.findOne({username:request.body.username,password:request.body.password});
-            if(match)
-            {
-                 request.session.username = username;
-                 return response.json({success:true , message:"found matching username and password"});
-            }
-            else
+            const match = await the_database.find
+            ({
+            selector: {
+            
+                username:request.body.username,
+                password:request.body.password
+            
+            }});
+            if(!match.docs || match.docs.length === 0)
             {
                 return response.json({success:false,message:"no matching username and password found"});
             }
+            request.session.username = request.body.username;
+            return response.json({success:true , message:"found matching username and password"});
         }
         catch(err)
         {

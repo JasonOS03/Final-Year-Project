@@ -9,7 +9,7 @@ const register_button = document.getElementById("register_button");
 
 function validate_username()
 {
-    const u_name = document.getElementById("username").value;
+    const u_name = document.getElementById("register_uname").value;
     if (u_name.length < 8)
     {
         error_section.innerHTML = `Invalid username length, username must be at least 8 letters`;
@@ -20,7 +20,7 @@ function validate_username()
 
 function validate_password()
 {
-    const password = document.getElementById("password").value;
+    const password = document.getElementById("register_password").value;
     const regex = /^[A-Za-z](?=.*\d).{9,}$/;
     const matching =  regex.test(password);
 
