@@ -29,7 +29,7 @@ login_submit.addEventListener("click" ,async (e)=> {
         {
          login_form.innerHTML = "Correct credentials entered, redirecting to homepage";
         setTimeout(()=>{
-           window.location.href = "index.html" 
+           window.location.href = "homepage.html" 
         },2000);
         }
         else
