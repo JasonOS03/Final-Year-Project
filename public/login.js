@@ -1,3 +1,5 @@
+const { request } = require("express");
+
 const username = document.getElementById("username").value;
 const password =  document.getElementById("password").value;
 const login_submit =  document.getElementById("login_submit");
@@ -31,6 +33,7 @@ login_submit.addEventListener("click" ,async (e)=> {
         setTimeout(()=>{
            window.location.href = "homepage.html" 
         },2000);
+        
         }
         else
         {

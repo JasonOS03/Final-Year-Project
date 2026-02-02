@@ -189,7 +189,7 @@ register_button.addEventListener("click",async (e)=>{
             },
             body: JSON.stringify(
             {
-               username:u_name,
+               username: u_name,
                products : product_array
             })
 
@@ -197,6 +197,20 @@ register_button.addEventListener("click",async (e)=>{
          })
          const response = await product_details.json();
          console.log(response);
+         
+         await fetch("/generate-recommendations", {
+            method : "POST",
+            headers:
+            {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(
+            {
+                products: product_array,
+                ideas: idea_array
+            })
+         })
+         window.location.href = "index.html";
     }
     catch(error)
     {
