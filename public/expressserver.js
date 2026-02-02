@@ -52,12 +52,14 @@ app.use(express.static("public"));
             const query = await the_database.find({
                 selector:
                 {
+                    date_inserted: {$exists : true},
                     api_prompt: {"$exists": true },
-                    username: request.body.username // the user prompt exists
+                    username: request.session.username // the user prompt exists
                 },
                 fields:
                 [
-                    "formatted_result" // only the output field is retrieved
+                    "formatted_result",
+                    "date_inserted" // only the output field is retrieved
                 ],
                 sort:
                  [
@@ -139,7 +141,7 @@ app.use(express.static("public"));
     app.post("/generate_recommendations",async (request,response) => 
     {
             try {
-                const username = request.body.username;
+                const username = request.session.username;
                 const products = request.body.products;
                 const ideas = request.body.ideas;
 
@@ -177,7 +179,7 @@ app.use(express.static("public"));
             const content = result.choices[0].message.content
             const formatted_result = JSON.stringify(result);
             // insert the formatted response and the user prompt into the database
-            await the_database.insert({ username,api_prompt,formatted_result, date_inserted: new Date().toISOString});
+            await the_database.insert({ username,api_prompt,formatted_result, date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,api_prompt});
             // if no content is included in the response
             if(!content)
