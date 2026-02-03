@@ -198,7 +198,7 @@ register_button.addEventListener("click",async (e)=>{
          const response = await product_details.json();
          console.log(response);
 
-         await fetch("/generate_recommendations", {
+         const generate_recommendations = await fetch("/generate_recommendations", {
             method : "POST",
             headers:
             {
@@ -211,6 +211,9 @@ register_button.addEventListener("click",async (e)=>{
                 ideas: idea_array
             })
          });
+         const resp = await generate_recommendations.json();
+         console.log(resp.output);
+
          window.location.href = "index.html";
     }
     catch(error)
