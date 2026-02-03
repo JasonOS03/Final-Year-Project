@@ -63,7 +63,7 @@ app.use(express.static("public"));
                 ],
                 sort:
                  [
-                    { date_inserted: "desc" } // sorted by id in descending order
+                    { date_inserted: "asc" } // sorted by id in descending order
                  ],
                     limit: 1 // enforce a limit of 1 to show only the latest recommendation
                 
@@ -166,7 +166,7 @@ app.use(express.static("public"));
             { role: "system", content: "none" },
             { role: "user", content: api_prompt } // sends the user prompt
 
-            ], max_tokens: 50 }) // sets a maximum token limit 
+            ], max_tokens: 30 }) // sets a maximum token limit 
 
         });
         console.log("OpenRouter response status:", resp.status);
@@ -180,22 +180,24 @@ app.use(express.static("public"));
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
+            const formatted_result = JSON.stringify(result);
             console.log("OpenRouter result: ",result);
             // parse the response and extract the text content
-            const content = result.choices[0].message.content
-            const formatted_result = JSON.stringify(result);
+
+            const message = result?.choices?.[0]?.message; 
+            const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
             // insert the formatted response and the user prompt into the database
             await the_database.insert({ username,api_prompt,formatted_result, date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,api_prompt});
             // if no content is included in the response
-            if(!content)
+            if(!response_content)
             {
                 console.log("content is empty");
             }
             else
             {
                 // return the content to the front-end in JSON form
-                response.json({output: content});
+                response.json({output: response_content});
             }
             } catch (err) {
                 console.error("Error inserting prompt to database",err);

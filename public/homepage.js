@@ -14,9 +14,15 @@ try{
         }
     }
     )
-    const retrieved_data = await retrieval.json();
-    const retrieved_output = JSON.parse(retrieved_data.output);
-    const response_content = retrieved_output.choices[0].message.content;
+    const backend_response = await retrieval.json();
+    console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
+    let res = backend_response.output;
+    while(typeof res === "string")
+    {
+        res = JSON.parse(res);
+    }
+    const message = res?.choices?.[0]?.message; 
+    const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
     response_text.innerHTML = response_content.trim().replace(/"/g, ""); // remove double quotes from the response
 }catch(err)
 {
