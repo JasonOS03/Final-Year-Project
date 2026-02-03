@@ -1,4 +1,3 @@
-const { request } = require("express");
 
 const username = document.getElementById("username").value;
 const password =  document.getElementById("password").value;
@@ -33,7 +32,7 @@ login_submit.addEventListener("click" ,async (e)=> {
         setTimeout(()=>{
            window.location.href = "homepage.html" 
         },2000);
-        
+
         }
         else
         {

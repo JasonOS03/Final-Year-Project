@@ -194,11 +194,11 @@ register_button.addEventListener("click",async (e)=>{
             })
 
            
-         })
+         });
          const response = await product_details.json();
          console.log(response);
-         
-         await fetch("/generate-recommendations", {
+
+         await fetch("/generate_recommendations", {
             method : "POST",
             headers:
             {
@@ -206,10 +206,11 @@ register_button.addEventListener("click",async (e)=>{
             },
             body: JSON.stringify(
             {
+                username: u_name,
                 products: product_array,
                 ideas: idea_array
             })
-         })
+         });
          window.location.href = "index.html";
     }
     catch(error)
