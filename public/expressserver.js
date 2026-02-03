@@ -141,11 +141,15 @@ app.use(express.static("public"));
     app.post("/generate_recommendations",async (request,response) => 
     {
             try {
-                const username = request.session.username;
+                const username = request.body.username;
                 const products = request.body.products;
                 const ideas = request.body.ideas;
 
-                const api_prompt  = "For this SaaS startup, generate a product/service idea based on this portfolio: " + products + "and these ideas: " + ideas
+                const the_products = JSON.stringify(products);
+                const the_ideas = JSON.stringify(ideas);
+
+
+                const api_prompt  = `For this SaaS startup, generate a product/service idea based on this portfolio: ${the_products} and these ideas: ${the_ideas}`;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -165,6 +169,7 @@ app.use(express.static("public"));
             ], max_tokens: 50 }) // sets a maximum token limit 
 
         });
+        console.log("OpenRouter response status:", resp.status);
 
         if (!resp.ok) 
         {
@@ -175,6 +180,7 @@ app.use(express.static("public"));
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
+            console.log("OpenRouter result: ",result);
             // parse the response and extract the text content
             const content = result.choices[0].message.content
             const formatted_result = JSON.stringify(result);
