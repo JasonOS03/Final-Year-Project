@@ -3,6 +3,7 @@ const input = document.getElementById("promptbox");
 const response_container = document.getElementById("container");
 const response_text = document.getElementById("response");
 const register_button = document.getElementById("register_button");
+const view_full_button = document.getElementById("view_full_recomm");
 
 
 document.addEventListener("DOMContentLoaded", async ()=>{
