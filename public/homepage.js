@@ -46,7 +46,6 @@ try{
 
         try
         {
-            const u_name = document.getElementById("register_uname").value;
             const detailed_summary  =  await fetch("/retrieve_full_summary",
             {
                 method: "POST",
@@ -54,13 +53,21 @@ try{
                 {
                     "Content-Type":"application/json"
                 },
+                credentials: "include",
                 body: JSON.stringify
                 ({
-                    username:u_name,
-                    response_summary: response_text.dataset.summary
+                    summary: response_text.dataset.summary
                 })
             })
             const resp = await detailed_summary.json();
+            response_container.innerHTML = `<h3>Summary</h3>
+            <br><br>
+            <p>${response_text.dataset.summary}</p>
+            <br><br>
+            <br><br>
+            <h4>Detailed Summary</h4>
+            <br><br>
+            <p>${resp.output}</p>`;
             console.log(resp);
         }
         catch
@@ -73,6 +80,7 @@ try{
             container.style.height = container_height + "px";
             container.style.boxShadow = "";
             container.style.outline  = "";
+            container.appendChild(view_full_button);
 
             x_button.remove();
         })
