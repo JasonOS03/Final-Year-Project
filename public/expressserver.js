@@ -210,6 +210,70 @@ app.use(express.static("public"));
             console.log("listening on port 3000")
         }
         );
+    app.post("/retrieve_full_summary",async (request,response) =>
+    {
+        try {
+                const username = request.body.username;
+                const summary = request.body.summary;
+
+
+
+                const full_summary_prompt  = `For this SaaS startup,expand on this product/service summary: ${summary} and give a short risk assessment of implementing this product/service under the headings: Market conditions,Potential Cost, Size of potential market, Uniqueness of Product idea give an . Give a overall risk grading(low, medium or high)`;
+                // post the user prompt to the OpenRouter API
+                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost:3000", 
+                    "X-Title": "SaaS Idea Generator"
+                    
+                    },
+                    body: JSON.stringify(
+                        // indicates the AI model used
+                        {  model: "anthropic/claude-3.5-sonnet", messages: [
+            { role: "system", content: "none" },
+            { role: "user", content: full_summary_prompt } // sends the user prompt
+
+            ], max_tokens: 500 }) // sets a maximum token limit 
+
+        });
+        console.log("OpenRouter response status:", resp.status);
+
+        if (!resp.ok) 
+        {
+            const error_text = await resp.text();
+            console.error("Model API error:", error_text);
+            return response.status(resp.status).json({ error: error_text });
+        }
+
+            // asynchronously wait for the JSON response
+            const result = await resp.json();
+            const formatted_result = JSON.stringify(result);
+            console.log("OpenRouter result: ",result);
+            // parse the response and extract the text content
+
+            const message = result?.choices?.[0]?.message; 
+            const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+            // insert the formatted response and the user prompt into the database
+            await the_database.insert({ username,full_summary_prompt,formatted_result, date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,full_summary_prompt});
+            // if no content is included in the response
+            if(!response_content)
+            {
+                console.log("content is empty");
+            }
+            else
+            {
+                // return the content to the front-end in JSON form
+                response.json({output: response_content});
+            }
+            } catch (err) {
+                console.error("Error inserting prompt to database",err);
+            }
+        
+        });
+        
 
 
 
