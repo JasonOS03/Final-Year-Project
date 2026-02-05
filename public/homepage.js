@@ -25,8 +25,9 @@ try{
     const message = res?.choices?.[0]?.message; 
     const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
     response_text.innerHTML = response_content.trim().replace(/"/g, "");
+    response_text.dataset.summary = response_content.trim().replace(/"/g, "");
 
-    view_full_button.addEventListener("click",()=>{
+    view_full_button.addEventListener("click",async ()=>{
         const container = document.getElementById("container");
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
@@ -42,6 +43,31 @@ try{
         x_button.style.top = 0;
         x_button.style.right = 0;
         x_button.style.position = "absolute";
+
+        try
+        {
+            const u_name = document.getElementById("register_uname").value;
+            const detailed_summary  =  await fetch("/retrieve_full_summary",
+            {
+                method: "POST",
+                headers:
+                {
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify
+                ({
+                    username:u_name,
+                    response_summary: response_text.dataset.summary
+                })
+            })
+            const resp = await detailed_summary.json();
+            console.log(resp);
+        }
+        catch
+        {
+            console.log("Failed to send summary to the backend");
+        }
+
         x_button.addEventListener("click",()=>{
             container.style.width = container_width + "px";
             container.style.height = container_height + "px";
