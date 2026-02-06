@@ -31,8 +31,8 @@ try{
         const container = document.getElementById("container");
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
-        container.style.width = container_width *1.8 + "px";
-        container.style.height = container_height *1.8 + "px";
+        container.style.width = container_width *2.7 + "px";
+        container.style.height = container_height *2.7 + "px";
         container.style.position = "relative";
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
@@ -60,14 +60,26 @@ try{
                 })
             })
             const resp = await detailed_summary.json();
+            const lower_output = resp.output.toLowerCase();
+            const risk_level = lower_output.split("risk level:")[1]?.trim() ||"Risk level: undefined";
+            const market_size = lower_output.split("size of potential market:")[1]?.trim() ||"Size of Market: undefined";
+            const market_conditions = lower_output.split("market conditions:")[1]?.trim() || "Market Conditions: undefined";
+            const potential_cost = lower_output.split("potential cost:")[1]?.trim() || "Cost: undefined";
             response_container.innerHTML = `<h3>Summary</h3>
             <br><br>
             <p>${response_text.dataset.summary}</p>
             <br><br>
-            <br><br>
             <h4>Detailed Summary</h4>
             <br><br>
-            <p>${resp.output}</p>`;
+            <label>Market Conditions: </label>
+            <p>${market_conditions}</p>
+            <br><br>
+            <label>Market Size</label>
+            <p>${market_size}</p>
+            <br><br>
+            <label>Potential Cost</label>
+            <p>${potential_cost}</p>
+            <br><br>`;
             console.log(resp);
         }
         catch
