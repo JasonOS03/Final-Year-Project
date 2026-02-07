@@ -313,6 +313,24 @@ app.use(express.static("public"));
         return;
     };
     })
+    app.post("/logout", async (request,response) =>
+    {
+        try
+        {
+            request.session.destroy(err =>{
+                if(!err)
+                {
+                    return response.json({success:true})
+                }
+                return response.status(500).json({ error: "Failed to process logout" });
+            })
+        }
+        catch(err)
+        {
+            console.log("Failed end user session",err);
+            return response.status(400).end("logout unsuccessful: bad request");
+        }
+    })
     
 
 
