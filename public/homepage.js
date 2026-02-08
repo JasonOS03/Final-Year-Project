@@ -34,21 +34,26 @@ try{
     response_text.innerHTML = response_content.trim().replace(/"/g, "");
     response_text.dataset.summary = response_content.trim().replace(/"/g, "");
 
-    containers.forEach((container,i) =>{
-    view_buttons[i].addEventListener("click",async ()=>{
+    
+
+        async function expand(container,i){
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
 
         const clone_button = view_buttons[i].cloneNode(true)
         clone_button.addEventListener("click",()=>{
-            view_buttons[i].dispatchEvent( new Event("click"));
+            expand(container,i);
         })
         container.style.width = container_width *2.7 + "px";
         container.style.height = container_height *2.7 + "px";
         container.style.position = "relative";
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
+
+        if(container.contains(view_buttons[i]))
+        {
         container.removeChild(view_buttons[i]);
+        }
         const x_button = document.createElement("button")
         x_button.textContent = "X";
         x_button.style.top = 0;
@@ -101,24 +106,42 @@ try{
         {
             console.log("Failed to send summary to the backend");
         }
-
-        x_button.addEventListener("click",()=>{
+        function collapse(container,clone_button){
             container.style.width = container_width + "px";
-            container.style.height = container_height + "px";
+            container.style.height = container_height  + "px";
             container.style.boxShadow = "";
             container.style.outline  = "";
+
             container.appendChild(clone_button);
             clone_button.style.position = "absolute";
-            clone_button.style.bottom = "20px"; 
-            clone_button.style.left = "20px";
+            clone_button.style.bottom = "1px";
+            clone_button.style.left = "50%";
+            clone_button.style.transform = "translateX(-50%)";
+            const numbers = document.querySelector(".carousel-indicators");
+            numbers.style.bottom = "-14px";
+
             carousel.insertBefore(left_arrow,carousel.firstChild);
             carousel.insertBefore(right_arrow,carousel.firstChild);
 
             x_button.remove();
-        })
+            }
 
-    })
- }); // remove double quotes from the response
+        x_button.addEventListener("click",()=>{
+
+            collapse(container,clone_button);
+        });
+    }
+    containers.forEach((container,i)=>{
+        view_buttons[i].addEventListener("click",()=>{
+            expand(container,i);
+        });
+
+    });
+   
+
+
+ 
+  // remove double quotes from the response
 }catch(err)
 {
     console.log("failed to retrieve recommendation");

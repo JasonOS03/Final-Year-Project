@@ -149,7 +149,7 @@ app.use(express.static("public"));
                 const the_ideas = JSON.stringify(ideas);
 
 
-                const api_prompt  = `For this SaaS startup, generate a product/service idea based on this portfolio: ${the_products} and these ideas: ${the_ideas}`;
+                const api_prompt  = `For this SaaS startup, generate 3 distinct product/service ideas numbered from 1-3 based on this portfolio: ${the_products} and these ideas: ${the_ideas}`;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -166,7 +166,7 @@ app.use(express.static("public"));
             { role: "system", content: "none" },
             { role: "user", content: api_prompt } // sends the user prompt
 
-            ], max_tokens: 30 }) // sets a maximum token limit 
+            ], max_tokens: 90 }) // sets a maximum token limit 
 
         });
         console.log("OpenRouter response status:", resp.status);
@@ -186,18 +186,23 @@ app.use(express.static("public"));
 
             const message = result?.choices?.[0]?.message; 
             const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+
+            const regex = /\n?\s*\d\.\s+/;
+            const three_parts = response_content.split(regex);
             // insert the formatted response and the user prompt into the database
-            await the_database.insert({ username,api_prompt,formatted_result, date_inserted: new Date().toISOString()});
-            console.log("Inserted document:", { username,api_prompt});
+            for(let i = 0;i<three_parts.length;i++){
+            await the_database.insert({ username,api_prompt,recomm_text: three_parts[i].trim(), date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,api_prompt, part:i+1});
+            }
             // if no content is included in the response
-            if(!response_content)
+            if(!three_parts)
             {
                 console.log("content is empty");
             }
             else
             {
                 // return the content to the front-end in JSON form
-                response.json({output: response_content});
+                response.json({output: three_parts});
             }
             } catch (err) {
                 console.error("Error inserting prompt to database",err);
