@@ -180,7 +180,6 @@ app.use(express.static("public"));
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
-            const formatted_result = JSON.stringify(result);
             console.log("OpenRouter result: ",result);
             // parse the response and extract the text content
 
@@ -189,9 +188,18 @@ app.use(express.static("public"));
 
             const regex = /\n?\s*\d\.\s+/;
             const three_parts = response_content.split(regex);
+
+            const parts_array = [];
+            for(i=0;i<three_parts.length;i++)
+            {
+                if(three_parts[i] != "")
+                {
+                    parts_array.push(three_parts[i].trim());
+                }
+            }
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<three_parts.length;i++){
-            await the_database.insert({ username,api_prompt,recomm_text: three_parts[i].trim(), date_inserted: new Date().toISOString()});
+            await the_database.insert({ username,api_prompt,recomm_text: parts_array, date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,api_prompt, part:i+1});
             }
             // if no content is included in the response
@@ -202,7 +210,7 @@ app.use(express.static("public"));
             else
             {
                 // return the content to the front-end in JSON form
-                response.json({output: three_parts});
+                response.json({output: parts_array});
             }
             } catch (err) {
                 console.error("Error inserting prompt to database",err);
@@ -221,15 +229,15 @@ app.use(express.static("public"));
                 const username = request.session.username;
                 const summary = request.body.summary;
 
-                const database_check = await the_database.find({selector: {username,summary},limit: 1});
+                const database_check = await the_database.find({selector: {username,summary},limit: 3});
 
                 if(database_check.docs.length >= 1)
                 {
-                    return response.json({output:database_check.docs[0].expanded_summary});
+                    return response.json({output1:database_check.docs[0].expanded_summary,output2:database_check.docs[1].expanded_summary,output3:database_check.docs[2].expanded_summary});
                 }
           
 
-                const full_summary_prompt  = `For this SaaS startup,expand on this product/service summary: ${summary} and give a short risk assessment of implementing this product/service under the headings: Market conditions,Potential Cost, Size of potential market, Uniqueness of Product idea. Give a overall risk grading(low, medium or high) and provide the links for the sources of information you got`;
+                const full_summary_prompt  = `For this SaaS startup,expand on each of these product/service summaries: ${summary} and give a short risk assessment of implementing these product/services under the headings: Market conditions,Potential Cost, Size of potential market, Uniqueness of Product idea, Overall Risk Grading(low,medium,high) and provide the links for the sources of information you got`;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -260,24 +268,37 @@ app.use(express.static("public"));
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
-            const formatted_result = JSON.stringify(result);
             console.log("OpenRouter result: ",result);
             // parse the response and extract the text content
 
             const message = result?.choices?.[0]?.message; 
             const expanded_summary = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+
+            const regex = /\n?\s*\d\.\s+/;
+            const three_parts = expanded_summary.split(regex);
+
+            const parts_array = [];
+            for(i=0;i<three_parts.length;i++)
+            {
+                if(three_parts[i] != "")
+                {
+                    parts_array.push(three_parts[i].trim());
+                }
+            }
             // insert the formatted response and the user prompt into the database
-            await the_database.insert({ username,full_summary_prompt,summary,expanded_summary, date_inserted: new Date().toISOString()});
-            console.log("Inserted document:", { username,full_summary_prompt});
+            for(let i = 0;i<three_parts.length;i++){
+            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: parts_array, date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,full_summary_prompt,expanded_text});
+            }
             // if no content is included in the response
-            if(!expanded_summary)
+            if(!three_parts)
             {
                 console.log("content is empty");
             }
             else
             {
                 // return the content to the front-end in JSON form
-                 return response.json({output: expanded_summary});
+                 return response.json({output: parts_array});
             }
             } catch (err) {
                 console.error("Error inserting prompt to database",err);
@@ -296,21 +317,24 @@ app.use(express.static("public"));
             },
             fields:
             [
-                "expanded_summary" // only the output field is retrieved
+                "expanded_text" // only the output field is retrieved
             ],
-                limit: 1 // enforce a limit of 1 to show only the latest recommendation
+                limit: 3 // enforce a limit of 1 to show only the latest recommendation
             
         });
         // if there are no documents or the document length is 0
-        if(!query.docs || query.docs.length === 0)
+        if(!query.docs || query.docs.length < 3)
         {
-            console.log("no documents found");
+            console.log("not enough documents found");
             return response.json({ output: "recommendations not available",found:false });
         }
         // set the response as the first result document generated by running the query
         const retrieved_response = query.docs[0];
+        const retrieved_response2 = query.docs[1];
+        const retrieved_response3 = query.docs[2];
         // send the response to the frontend
-         return response.json({ output: retrieved_response.expanded_summary });
+         return response.json({ output1: retrieved_response.expanded_text,output2: retrieved_response2.expanded_text,output3:retrieved_response3.expanded_text});
+         
         
 
     }catch(err){
