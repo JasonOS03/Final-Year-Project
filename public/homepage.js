@@ -3,13 +3,17 @@ const input = document.getElementById("promptbox");
 const response_container = document.getElementById("container");
 const response_container2 = document.getElementById("container2");
 const response_container3 = document.getElementById("container3");
-const response_text = document.getElementById("response");
+const response_text = document.getElementById("response1");
+const response_text2 = document.getElementById("response2");
+const response_text3 = document.getElementById("response3");
 const register_button = document.getElementById("register_button");
 const right_arrow = document.getElementById("right_arrow");
 const left_arrow = document.getElementById("left_arrow");
 const carousel = document.getElementById("carousel");
 
+
 const containers = [response_container,response_container2,response_container3];
+const container_texts = [response_text,response_text2,response_text3];
 const view_buttons = document.querySelectorAll(".view_full_recomm");
 
 
@@ -25,14 +29,14 @@ try{
     const backend_response = await retrieval.json();
     console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
     let res = backend_response.output;
-    while(typeof res === "string")
-    {
-        res = JSON.parse(res);
+   
+  
+
+    for( let i = 0;i<res.length;i++){
+        container_texts[i].innerHTML = res[i];
+        container_texts[i].dataset.summary = res[i] ;
     }
-    const message = res?.choices?.[0]?.message; 
-    const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
-    response_text.innerHTML = response_content.trim().replace(/"/g, "");
-    response_text.dataset.summary = response_content.trim().replace(/"/g, "");
+    
 
     
 
@@ -75,18 +79,18 @@ try{
                 credentials: "include",
                 body: JSON.stringify
                 ({
-                    summary: response_text.dataset.summary
+                    summary: container_texts[i].dataset.summary
                 })
             })
             const resp = await detailed_summary.json();
-            const lower_output = resp.output.toLowerCase();
+            const lower_output = resp.output.join(" ").toLowerCase();
             const risk_level = lower_output.split("risk level:")[1]?.trim() ||"Risk level: undefined";
             const market_size = lower_output.split("size of potential market:")[1]?.trim() ||"Size of Market: undefined";
             const market_conditions = lower_output.split("market conditions:")[1]?.trim() || "Market Conditions: undefined";
             const potential_cost = lower_output.split("potential cost:")[1]?.trim() || "Cost: undefined";
             container.innerHTML = `<h3>Summary</h3>
             <br><br>
-            <p>${response_text.dataset.summary}</p>
+            <p>${container_texts[i].dataset.summary}</p>
             <br><br>
             <h4>Detailed Summary</h4>
             <br><br>
@@ -112,6 +116,8 @@ try{
             container.style.boxShadow = "";
             container.style.outline  = "";
 
+            container.innerHTML = "";
+            container.appendChild(container_texts[i]);
             container.appendChild(clone_button);
             clone_button.style.position = "absolute";
             clone_button.style.bottom = "1px";
