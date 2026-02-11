@@ -79,7 +79,13 @@ app.use(express.static("public"));
             const retrieved_response2 = query.docs[1];
             const retrieved_response3 = query.docs[2];
             // send the response to the frontend
-           response.json({ output: retrieved_response.recomm_text,output2:retrieved_response2.recomm_text,output3:retrieved_response3.recomm_text });
+           response.json({ output:
+            [
+                 {recomm_text:retrieved_response.recomm_text ,id:0},
+                 {recomm_text:retrieved_response2.recomm_text,id:1},
+                {recomm_text:retrieved_response3.recomm_text,id:2}
+            ]
+        });
            
 
         }catch(err){
@@ -188,7 +194,7 @@ app.use(express.static("public"));
             const message = result?.choices?.[0]?.message; 
             const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
 
-            const regex = /\n?\s*\d\.\s+/;
+            const regex = /\s*\d+[\.\)\-]\s+/g;
             const three_parts = response_content.split(regex);
 
             const parts_array = [];
@@ -201,7 +207,7 @@ app.use(express.static("public"));
             }
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i], date_inserted: new Date().toISOString()});
+            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],recomm_id: i, date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,api_prompt, part:i+1});
             }
             // if no content is included in the response
@@ -230,12 +236,18 @@ app.use(express.static("public"));
         try {
                 const username = request.session.username;
                 const summary = request.body.summary;
+                const id = request.body.id
 
-                const database_check = await the_database.find({selector: {username,summary},limit: 3});
+                const database_check = await the_database.find(
+                    {
+                    selector: {username,id},
+                    sort:[{date_inserted:"asc"}],
+                    limit: 3
+                });
 
                 if(database_check.docs.length >= 3)
                 {
-                    return response.json({output1:database_check.docs[0].expanded_text,output2:database_check.docs[1].expanded_text,output3:database_check.docs[2].expanded_text});
+                    return response.json({output:[database_check.docs[0].expanded_text,database_check.docs[1].expanded_text,database_check.docs[2].expanded_text]});
                 }
           
 
@@ -276,7 +288,7 @@ app.use(express.static("public"));
             const message = result?.choices?.[0]?.message; 
             const expanded_summary = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
 
-            const regex = /\n?\s*\d\.\s+/;
+            const regex = /\s*\d+[\.\)\-]\s+/g;
             const three_parts = expanded_summary.split(regex);
 
             const parts_array = [];
@@ -289,8 +301,8 @@ app.use(express.static("public"));
             }
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: parts_array[i], date_inserted: new Date().toISOString()});
-            console.log("Inserted document:", { username,full_summary_prompt,expanded_text});
+            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: parts_array[i],id:i,date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,full_summary_prompt,expanded_text:parts_array[i]});
             }
             // if no content is included in the response
             if(parts_array.length ===0)
@@ -307,43 +319,6 @@ app.use(express.static("public"));
             }
         
         });
-    app.get("/retrieve_full_summary", async (request,response)=>
-    {
-        try{
-        const query = await the_database.find({
-            
-            selector:
-            {
-                username: request.session.username,
-                summary: request.query.summary// the user prompt exists
-            },
-            fields:
-            [
-                "expanded_text" // only the output field is retrieved
-            ],
-                limit: 3 // enforce a limit of 1 to show only the latest recommendation
-            
-        });
-        // if there are no documents or the document length is 0
-        if(!query.docs || query.docs.length < 3)
-        {
-            console.log("not enough documents found");
-            return response.json({ output: "recommendations not available",found:false });
-        }
-        // set the response as the first result document generated by running the query
-        const retrieved_response = query.docs[0];
-        const retrieved_response2 = query.docs[1];
-        const retrieved_response3 = query.docs[2];
-        // send the response to the frontend
-         return response.json({ output1: retrieved_response.expanded_text,output2: retrieved_response2.expanded_text,output3:retrieved_response3.expanded_text});
-         
-        
-
-    }catch(err){
-        console.log("failed to retrieve recommendations from the database",err);
-        return;
-    };
-    })
     app.post("/logout", async (request,response) =>
     {
         try

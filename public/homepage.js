@@ -33,8 +33,9 @@ try{
   
 
     for( let i = 0;i<res.length;i++){
-        container_texts[i].innerHTML = res[i];
-        container_texts[i].dataset.summary = res[i] ;
+        container_texts[i].innerHTML = res[i].recomm_text;
+        container_texts[i].dataset.id = res[i].id;
+        container_texts[i].dataset.summary = res[i].recomm_text;
     }
     
 
@@ -63,8 +64,14 @@ try{
         x_button.style.top = 0;
         x_button.style.right = 0;
         x_button.style.position = "absolute";
-        carousel.removeChild(left_arrow);
+        if(carousel.contains(left_arrow))
+        {
+            carousel.removeChild(left_arrow);
+        }
+        if(carousel.contains(right_arrow))
+        {
         carousel.removeChild(right_arrow);
+        }
 
 
         try
@@ -79,15 +86,16 @@ try{
                 credentials: "include",
                 body: JSON.stringify
                 ({
-                    summary: container_texts[i].dataset.summary
+                    id: container_texts[i].dataset.id
                 })
             })
             const resp = await detailed_summary.json();
-            const lower_output = resp.output.join(" ").toLowerCase();
-            const risk_level = lower_output.split("risk level:")[1]?.trim() ||"Risk level: undefined";
-            const market_size = lower_output.split("size of potential market:")[1]?.trim() ||"Size of Market: undefined";
-            const market_conditions = lower_output.split("market conditions:")[1]?.trim() || "Market Conditions: undefined";
-            const potential_cost = lower_output.split("potential cost:")[1]?.trim() || "Cost: undefined";
+            const lower_output = resp.output[i].toLowerCase();
+            const risk_level = lower_output.match(/risk\s*level[:\--]\s*(.*)/i)?.[1] || "undefined";
+            const market_conditions = lower_output.match(/market\s*conditions[:\--]\s*(.*)/i)?.[1] || "undefined";
+            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\--]\s*(.*)/i)?.[1] || "undefined";
+            const potential_cost = lower_output.match(/potential\s*cost[:\--]\s*(.*)/i)?.[1] || "undefined";
+
             container.innerHTML = `<h3>Summary</h3>
             <br><br>
             <p>${container_texts[i].dataset.summary}</p>
@@ -125,9 +133,14 @@ try{
             clone_button.style.transform = "translateX(-50%)";
             const numbers = document.querySelector(".carousel-indicators");
             numbers.style.bottom = "-14px";
-
-            carousel.insertBefore(left_arrow,carousel.firstChild);
+            if(!carousel.contains(left_arrow))
+            {
+                carousel.insertBefore(left_arrow,carousel.firstChild);
+            }
+            if(!carousel.contains(right_arrow))
+            {
             carousel.insertBefore(right_arrow,carousel.firstChild);
+            }
 
             x_button.remove();
             }
