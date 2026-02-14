@@ -51,6 +51,7 @@ try{
         })
         container.style.width = container_width *2.7 + "px";
         container.style.height = container_height *2.7 + "px";
+        container.style.overflowY = "auto"
         container.style.position = "relative";
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
@@ -86,15 +87,19 @@ try{
                 credentials: "include",
                 body: JSON.stringify
                 ({
-                    id: container_texts[i].dataset.id
+                    id: Number(container_texts[i].dataset.id),
+                    summary:container_texts[i].dataset.summary
                 })
             })
             const resp = await detailed_summary.json();
-            const lower_output = resp.output[i].toLowerCase();
-            const risk_level = lower_output.match(/risk\s*level[:\--]\s*(.*)/i)?.[1] || "undefined";
-            const market_conditions = lower_output.match(/market\s*conditions[:\--]\s*(.*)/i)?.[1] || "undefined";
-            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\--]\s*(.*)/i)?.[1] || "undefined";
-            const potential_cost = lower_output.match(/potential\s*cost[:\--]\s*(.*)/i)?.[1] || "undefined";
+            const lower_output = resp.output.toLowerCase();
+
+            const market_conditions = lower_output.match(/market\s*conditions[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+            const potential_cost = lower_output.match(/potential\s*cost[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+            const uniqueness = lower_output.match(/uniqueness.*idea[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+            const risk_level = lower_output.match(/overall.*risk.*grading[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+
 
             container.innerHTML = `<h3>Summary</h3>
             <br><br>
@@ -110,7 +115,12 @@ try{
             <br><br>
             <label>Potential Cost</label>
             <p>${potential_cost}</p>
-            <br><br>`;
+            <br><br>
+            <label> Uniqueness of Product Idea</label>
+            <p>${uniqueness}</p>
+            <br><br>
+            <label> Risk Grading </label>
+            <p>${risk_level}</p>`;
             console.log(resp);
             container.appendChild(x_button);
         }
