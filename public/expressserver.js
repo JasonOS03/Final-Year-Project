@@ -59,7 +59,8 @@ app.use(express.static("public"));
                 fields:
                 [
                     "recomm_text",
-                    "date_inserted" // only the output field is retrieved
+                    "date_inserted",
+                    "id"// only the output field is retrieved
                 ],
                 sort:
                  [
@@ -81,9 +82,9 @@ app.use(express.static("public"));
             // send the response to the frontend
            response.json({ output:
             [
-                 {recomm_text:retrieved_response.recomm_text ,id:0},
-                 {recomm_text:retrieved_response2.recomm_text,id:1},
-                {recomm_text:retrieved_response3.recomm_text,id:2}
+                 {recomm_text:retrieved_response.recomm_text ,id:retrieved_response.id},
+                 {recomm_text:retrieved_response2.recomm_text,id:retrieved_response2.id},
+                {recomm_text:retrieved_response3.recomm_text,id:retrieved_response3.id}
             ]
         });
            
@@ -157,7 +158,22 @@ app.use(express.static("public"));
                 const the_ideas = JSON.stringify(ideas);
 
 
-                const api_prompt  = `For this SaaS startup, generate 3 distinct product/service ideas numbered from 1-3 based on this portfolio: ${the_products} and these ideas: ${the_ideas}`;
+                const api_prompt  = `For this SaaS startup, 
+                generate exactly 3 distinct product/service ideas numbered from 1-3 
+                in the following format: 
+                1. idea 1 here
+                2. idea 2 here
+                3. idea 3 here
+                 based on this portfolio: ${the_products}
+                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
+                  other rules you must follow are:
+                  1. The output must not include summaries, intros or conclusions
+                  2. Exactly three unique recommendations must be generated
+                  3. no text can be added between each idea
+                  4. Markdown must not be used
+                  5. Do not combine the ideas into one idea
+                  6. do not add any text, whitespace of blank lines before each idea
+                  7. do not add any text before the list of ideas or after the list`;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -194,10 +210,10 @@ app.use(express.static("public"));
             const message = result?.choices?.[0]?.message; 
             const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
 
-            const regex = /\s*\d+[\.\)\-]\s+/g;
-            const three_parts = response_content.split(regex);
+            const regex = /\n\s*(?=\d\.\s)/; 
+            const three_parts = response_content.split(regex); 
+            const parts_array = three_parts .map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
 
-            const parts_array = [];
             for( let i=0;i<three_parts.length;i++)
             {
                 if(three_parts[i] != "")
@@ -207,7 +223,7 @@ app.use(express.static("public"));
             }
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],recomm_id: i, date_inserted: new Date().toISOString()});
+            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],id: i, date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,api_prompt, part:i+1});
             }
             // if no content is included in the response
@@ -240,18 +256,34 @@ app.use(express.static("public"));
 
                 const database_check = await the_database.find(
                     {
-                    selector: {username,id},
-                    sort:[{date_inserted:"asc"}],
-                    limit: 3
+                        selector: {username,id}
+                    
                 });
 
-                if(database_check.docs.length >= 3)
+                if(database_check.docs.length === 1)
                 {
-                    return response.json({output:[database_check.docs[0].expanded_text,database_check.docs[1].expanded_text,database_check.docs[2].expanded_text]});
+                    return response.json({output: database_check.docs[0].expanded_text});
                 }
           
 
-                const full_summary_prompt  = `For this SaaS startup,expand on each of these product/service summaries: ${summary} and give a short risk assessment of implementing these product/services under the headings: Market conditions,Potential Cost, Size of potential market, Uniqueness of Product idea, Overall Risk Grading(low,medium,high) and provide the links for the sources of information you got`;
+                const full_summary_prompt  = `For this SaaS startup,expand on this product/service idea: ${summary} 
+                and give a short risk assessment of implementing this product/service. All content generated for each heading must be displayed on the same line as the heading. 
+                You must provide an answer in the following format:
+                1.<expanded idea>
+                Market Conditions: <text>
+                Potential Cost: <text>
+                Size of Potential Market: <text>
+                Uniqueness of Product Idea: <text>
+                Overall Risk Grading: <text>
+                Sources (links): <text>
+                Rules:
+                  1. Markdown must not be used
+                  2. do not add any blank lines
+                  3. do not change the names of the headings
+                  4. The output must not include summaries, intros or conclusions
+                  5. return only the expanded summary and its corresponding risk assessment
+                  6. Punctuation must not be changed
+                `;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -264,7 +296,7 @@ app.use(express.static("public"));
                     },
                     body: JSON.stringify(
                         // indicates the AI model used
-                        {  model: "anthropic/claude-3.5-sonnet", messages: [
+                        {  model:"meta-llama/llama-3.1-8b-instruct", messages: [
             { role: "system", content: "Expand on SaaS product/service idea summary and include risk assessment" },
             { role: "user", content: full_summary_prompt } // sends the user prompt
 
@@ -286,34 +318,17 @@ app.use(express.static("public"));
             // parse the response and extract the text content
 
             const message = result?.choices?.[0]?.message; 
-            const expanded_summary = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+            const expanded_summary = message?.content?.trim();
 
-            const regex = /\s*\d+[\.\)\-]\s+/g;
-            const three_parts = expanded_summary.split(regex);
+         
 
-            const parts_array = [];
-            for( let i=0;i<three_parts.length;i++)
-            {
-                if(three_parts[i] != "")
-                {
-                    parts_array.push(three_parts[i].trim());
-                }
-            }
             // insert the formatted response and the user prompt into the database
-            for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: parts_array[i],id:i,date_inserted: new Date().toISOString()});
-            console.log("Inserted document:", { username,full_summary_prompt,expanded_text:parts_array[i]});
-            }
-            // if no content is included in the response
-            if(parts_array.length ===0)
-            {
-                console.log("content is empty");
-            }
-            else
-            {
+            
+            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: expanded_summary,id: Number(id),date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,full_summary_prompt,expanded_text:expanded_summary});
+            
                 // return the content to the front-end in JSON form
-                 return response.json({output: parts_array});
-            }
+                 return response.json({output: expanded_summary});
             } catch (err) {
                 console.error("Error inserting prompt to database",err);
             }
