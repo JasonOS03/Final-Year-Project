@@ -20,8 +20,8 @@ login_submit.addEventListener("click" ,async (e)=> {
             ({
                 username:username,
                 password:password
-            })
-            
+            }),
+            credentials: "include"
 
          })
          const resp = await login_details.json();
