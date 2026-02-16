@@ -1,22 +1,43 @@
 
 const express = require("express");
 const fetch = require("node-fetch");
+const cookieparser = require('cookie-parser');
 require("dotenv").config();
 const nano = require("nano");
 const app = express();
 const couch_database = nano(process.env.COUCHDB_URL);
 const sessions = require("express-session");
+const couch_store = require("connect-couchdb")(sessions);
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
-app.use(express.static("public"));
+app.use(cookieparser());
 
-    app.use(sessions({
-        secret : "the-secret-key",
-        saveUninitialized : false,
-        resave : false,
-        cookie : {secure:false}
-    }));
+    const couchUrl = new URL(process.env.COUCHDB_URL);
+
+app.use(
+  sessions({
+    secret: "the-secret-key",
+    saveUninitialized: false,
+    resave: false,
+    store: new couch_store({
+      name: "sessions",
+      host: couchUrl.hostname,
+      port: couchUrl.port || 5984,
+      protocol: couchUrl.protocol.replace(":", ""),
+      username: couchUrl.username,
+      password: couchUrl.password
+    }),
+    cookie: { secure: false }
+  })
+);
+
+
+    app.use(express.static("public"));
+
+    console.log("COUCHDB_URL:", process.env.COUCHDB_URL);
+    
+
 
     app.post("/user_login", async (request,response) => {
         
@@ -249,42 +270,57 @@ app.use(express.static("public"));
         );
     app.post("/retrieve_full_summary",async (request,response) =>
     {
+        console.log("retrieve_full_summary route HIT");
+        console.log("username:", request.session.username);
+        console.log("summary:", request.body.summary);
+        console.log("id:", request.body.id);
+
+
         try {
                 const username = request.session.username;
                 const summary = request.body.summary;
-                const id = request.body.id
+                const id = Number(request.body.id);
 
                 const database_check = await the_database.find(
                     {
-                        selector: {username,id}
+                        selector: {username,id:Number(id)}
                     
                 });
 
-                if(database_check.docs.length === 1)
+                if(database_check.docs.length === 1 && database_check.docs[0].expanded_text)
                 {
                     return response.json({output: database_check.docs[0].expanded_text});
                 }
           
 
-                const full_summary_prompt  = `For this SaaS startup,expand on this product/service idea: ${summary} 
-                and give a short risk assessment of implementing this product/service. All content generated for each heading must be displayed on the same line as the heading. 
-                You must provide an answer in the following format:
-                1.<expanded idea>
-                Market Conditions: <text>
-                Potential Cost: <text>
-                Size of Potential Market: <text>
-                Uniqueness of Product Idea: <text>
-                Overall Risk Grading: <text>
-                Sources (links): <text>
-                Rules:
-                  1. Markdown must not be used
-                  2. do not add any blank lines
-                  3. do not change the names of the headings
-                  4. The output must not include summaries, intros or conclusions
-                  5. return only the expanded summary and its corresponding risk assessment
-                  6. Punctuation must not be changed
-                `;
+              const full_summary_prompt =
+`Expand the following SaaS product/service idea showing a detailed analysis.
+
+Product/service Idea:
+${summary}
+
+You MUST output the expansion in EXACTLY this format:
+1. Expanded Idea: <text>
+Market Conditions: <text>
+Potential Cost: <text>
+Size of Potential Market: <text>
+Uniqueness of Product Idea: <text>
+Overall Risk Grading: <low/medium/high>
+Sources: <links>
+
+RULES:
+- Do NOT add any text before "1." or after the final "Sources:" line.
+- Do NOT use markdown formatting.
+- The content "Overall Risk Grading" field must be either low, medium or high
+- Do NOT add summaries, intros, or conclusions.
+- Do NOT change the heading names.
+- Do NOT add blank lines anywhere.
+`;
+
+
                 // post the user prompt to the OpenRouter API
+                console.log("Sending request to OpenRouter...");
+
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
@@ -311,26 +347,46 @@ app.use(express.static("public"));
             console.error("Model API error:", error_text);
             return response.status(resp.status).json({ error: error_text });
         }
+        
+
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
             console.log("OpenRouter result: ",result);
             // parse the response and extract the text content
 
-            const message = result?.choices?.[0]?.message; 
-            const expanded_summary = message?.content?.trim();
+            let expanded_summary =
+            result?.choices?.[0]?.message?.content ||
+            result?.choices?.[0]?.text ||
+            "";
 
-         
+            expanded_summary = String(expanded_summary).trim();
+
+
+
+            console.log("Returning expanded summary:", expanded_summary);
 
             // insert the formatted response and the user prompt into the database
-            
-            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: expanded_summary,id: Number(id),date_inserted: new Date().toISOString()});
+            const the_id = id;
+
+            if(database_check.docs.length === 1)
+            {
+                    database_check.docs[0].full_summary_prompt = full_summary_prompt;
+                    database_check.docs[0].expanded_text = expanded_summary;
+                    database_check.docs[0].date_inserted = new Date().toISOString();
+                    await the_database.insert(database_check.docs[0]);
+            }
+            else
+            {
+
+            await the_database.insert({ username,full_summary_prompt,summary, expanded_text: expanded_summary,id: the_id,date_inserted: new Date().toISOString()});
             console.log("Inserted document:", { username,full_summary_prompt,expanded_text:expanded_summary});
-            
+            }
                 // return the content to the front-end in JSON form
                  return response.json({output: expanded_summary});
             } catch (err) {
-                console.error("Error inserting prompt to database",err);
+                console.error("Error: ",err);
+                return response.status(500).json({ error: "Backend failure", details: err.message }); 
             }
         
         });
@@ -352,6 +408,7 @@ app.use(express.static("public"));
             return response.status(400).end("logout unsuccessful: bad request");
         }
     })
+    app.get("/debug-session", (req, res) => { res.json({ cookie: req.headers.cookie, session: req.session }); });
     
 
 

@@ -58,7 +58,7 @@ try{
 
         if(container.contains(view_buttons[i]))
         {
-        container.removeChild(view_buttons[i]);
+            view_buttons[i].style.display = "none";
         }
         const x_button = document.createElement("button")
         x_button.textContent = "X";
@@ -67,11 +67,11 @@ try{
         x_button.style.position = "absolute";
         if(carousel.contains(left_arrow))
         {
-            carousel.removeChild(left_arrow);
+           left_arrow.style.display = "none";
         }
         if(carousel.contains(right_arrow))
         {
-        carousel.removeChild(right_arrow);
+            right_arrow.style.display = "none";
         }
 
 
@@ -92,13 +92,23 @@ try{
                 })
             })
             const resp = await detailed_summary.json();
+            if (!resp.output || typeof resp.output !== "string") 
+                { console.warn("Output empty: ", resp); container.innerHTML = "<p>Summary retrieval failure</p>"; return; }
             const lower_output = resp.output.toLowerCase();
 
-            const market_conditions = lower_output.match(/market\s*conditions[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
-            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
-            const potential_cost = lower_output.match(/potential\s*cost[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
-            const uniqueness = lower_output.match(/uniqueness.*idea[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
-            const risk_level = lower_output.match(/overall.*risk.*grading[:\--]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_conditions = lower_output.match(/market\s*conditions[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+
+            const risk_level =(
+                lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
+                lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
+                lower_output.match(/overall\s*risk[:\-–]\s*([^\n]+)/i)?.[1] ||
+                "undefined") + "";
+
+
+
 
 
             container.innerHTML = `<h3>Summary</h3>
@@ -120,15 +130,36 @@ try{
             <p>${uniqueness}</p>
             <br><br>
             <label> Risk Grading </label>
-            <p>${risk_level}</p>`;
-            console.log(resp);
+            <p id = "risk_level"></p>`;
+
             container.appendChild(x_button);
+
+            x_button.addEventListener("click",()=>{
+                collapse(container);
+            });
+
+            document.getElementById("risk_level").textContent = risk_level;
+            const risk_grading = document.getElementById("risk_level");
+            const string_risk = String(risk_level||"");
+            if (string_risk.includes("high")||string_risk.includes("7")||string_risk.includes("8")||string_risk.includes("9"))
+            {
+                risk_grading.style.color = "red";
+            }
+            else if(string_risk.includes("medium")||string_risk.includes("4")||string_risk.includes("5")||string_risk.includes("6"))
+            {
+                risk_grading.style.color = "orange";
+            }
+            else if(string_risk.includes("low")||string_risk.includes("0")||string_risk.includes("1")||string_risk.includes("2")||string_risk.includes("3"))
+            {
+                risk_grading.style.color = "aquamarine";
+            }
+            console.log(resp);
         }
-        catch
+        catch(err)
         {
-            console.log("Failed to send summary to the backend");
+            console.error("Failed to send summary to the backend, error: ",err);
         }
-        function collapse(container,clone_button){
+        function collapse(container){
             container.style.width = container_width + "px";
             container.style.height = container_height  + "px";
             container.style.boxShadow = "";
@@ -136,11 +167,12 @@ try{
 
             container.innerHTML = "";
             container.appendChild(container_texts[i]);
-            container.appendChild(clone_button);
-            clone_button.style.position = "absolute";
-            clone_button.style.bottom = "1px";
-            clone_button.style.left = "50%";
-            clone_button.style.transform = "translateX(-50%)";
+            container.appendChild(view_buttons[i]);
+            view_buttons[i].style.position = "absolute";
+            view_buttons[i].style.bottom = "1px";
+            view_buttons[i].style.left = "50%";
+            container.style.overflowY = "hidden";
+            view_buttons[i].style.transform = "translateX(-50%)";
             const numbers = document.querySelector(".carousel-indicators");
             numbers.style.bottom = "-14px";
             if(!carousel.contains(left_arrow))
