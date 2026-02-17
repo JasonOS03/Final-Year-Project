@@ -409,6 +409,24 @@ RULES:
         }
     })
     app.get("/debug-session", (req, res) => { res.json({ cookie: req.headers.cookie, session: req.session }); });
+
+    app.get("/retrieve_details",async (request,response) =>{
+        try{
+        const user = request.session.username;
+         const query = await the_database.find({
+          selector:
+          {
+                 username : user
+          }
+        });
+        return response.json({ideas : query.docs[0].ideas , products : query.docs[0].products})
+    }
+    catch
+    {
+        return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
+    }
+    }
+)
     
 
 

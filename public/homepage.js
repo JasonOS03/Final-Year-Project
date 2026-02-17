@@ -168,6 +168,7 @@ try{
             container.innerHTML = "";
             container.appendChild(container_texts[i]);
             container.appendChild(view_buttons[i]);
+            view_buttons[i].style.display = "block";
             view_buttons[i].style.position = "absolute";
             view_buttons[i].style.bottom = "1px";
             view_buttons[i].style.left = "50%";
@@ -189,7 +190,7 @@ try{
 
         x_button.addEventListener("click",()=>{
 
-            collapse(container,clone_button);
+            collapse(container);
         });
     }
     containers.forEach((container,i)=>{
