@@ -413,13 +413,30 @@ RULES:
     app.get("/retrieve_details",async (request,response) =>{
         try{
         const user = request.session.username;
-         const query = await the_database.find({
+        console.log("SESSION USER:", JSON.stringify(user));
+         const ideas_query = await the_database.find({
           selector:
           {
                  username : user
-          }
+                 
+          },
+          fields:
+          [
+                "ideas"
+          ]
         });
-        return response.json({ideas : query.docs[0].ideas , products : query.docs[0].products})
+        const product_query = await the_database.find({
+            selector:
+          {
+                 username : user
+                 
+          },
+          fields:
+          [
+                "products"
+          ]
+        });
+        return response.json({ideas : ideas_query.docs[1]?.ideas || [] , products : product_query.docs[2]?.products || []})
     }
     catch
     {
