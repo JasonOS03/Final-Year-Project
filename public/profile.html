@@ -6,16 +6,45 @@
     <title>User Profile</title>
 </head>
 <body>
-    <h1>User Profile</h1>
+    <nav class = "navbar bg-warning mb-2">
+        <div class = "container">
+        <ul class = "bg-warning text-black text-center rounded navbar-nav flex-row gap-5 mx-auto p-3">
+            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "profile.html">Profile</a></li>
+            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "homepage.html">Recommendations</a></li>
+            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "logout.html">Logout</a></li>
+        </ul>
+        </div>
+    </nav>
+    <div class = "container">
+        <div class = "row justify-content-center">
+        <div class = "card col-md-8 bg-success" >
+        <img class = "img-thumbnail mx-auto d-block bg-success" src = "user_profile.png" alt = "user profile image" width = "100" height = "100">
+        <img class ="img-thumbnail position-absolute bg-success"  src = "settings_icon2.png" alt = "settings button" width = "50" height = "50" style = "top:5px;right:5px;">
+        <div class = "card-body text-center">
+            <h1 class = "text-center text-white p-2 card-title">User Profile</h1>
+            <h2 class = " text-center card-subtitle mb-2 text-muted text-white">Personal Details</h2>
+            <label class = "text-white form-label text-center d-inline-block">Username: </label>
+            <input class = "form-control mb-2" type = "text">
+
+            <label class = "text-white form-label text-center d-inline-block">Password: </label>
+            <input class = "form-control mb-2" type = "text">
+
+            <label class = "text-white form-label text-center d-inline-block">Email: </label>
+            <input class = "form-control mb-2" type = "text">
+
+        </div>
+    </div>
+    </div>
+    </div>
     <br><br>
-    <p>Click on the fields to update your portfolio</p>
+    <p class = "text-center text-black p-2">Click on the fields to update your portfolio or idea list</p>
     <br><br>
     <p id = "error_text"></p>
     <br><br>
     <div class = "container">
         <div class = "row justify-content-center">
             <div id = "idea_list_div" class = " col-md-8 bg-info text-center rounded p-4">
-                <h3 class = "text-center text-black">Section 2: Idea List</h3>
+                <h3 class = "text-center text-black">Idea List</h3>
                 <br><br>
                 <label class = "text-black form-label">Idea 1: </label>
                 <input class = "form-control mb-2 input-idea" type = "text" placeholder = "Please enter a product/service idea">
@@ -36,7 +65,7 @@
     <div class = "container">
         <div class = "row justify-content-center">
             <div id = "product_portfolio_div" class = " col-md-8 bg-warning text-center rounded p-4">
-                <h4 class = "text-center text-black">Section 3: Product Portfolio</h4>
+                <h4 class = "text-center text-black">Product Portfolio</h4>
                 <div>
                     <div class =  "individual-product">
                     <p class = "text-center text-black product-header">Product 1</p3>
