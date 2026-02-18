@@ -17,8 +17,15 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const profile = await retrieve_reg_details.json();
+            const username = document.getElementById("update_uname");
+            const password = document.getElementById("update_password");
+            const email =  document.getElementById("update_email");
             const idea_inputs = document.querySelectorAll(".input-idea");
             const products = document.querySelectorAll(".individual-product");
+
+                username.value = profile.username;
+                password.value = profile.password;
+                email.value = profile.email;
 
 
                 idea_inputs.forEach((input_box, i) => {
