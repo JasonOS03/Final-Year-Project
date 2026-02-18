@@ -412,7 +412,10 @@ RULES:
 
     app.get("/retrieve_details",async (request,response) =>{
         try{
-        const user = request.session.username;
+        let user = request.session.username;
+        console.log("RAW SESSION USER:", user);
+
+        user = user.trim().toLowerCase();
         console.log("SESSION USER:", JSON.stringify(user));
          const ideas_query = await the_database.find({
           selector:
@@ -422,7 +425,8 @@ RULES:
           },
           fields:
           [
-                "ideas"
+                "ideas",
+                "username"
           ]
         });
         const product_query = await the_database.find({
@@ -433,10 +437,27 @@ RULES:
           },
           fields:
           [
-                "products"
+                "products",
+                "username"
           ]
         });
-        return response.json({ideas : ideas_query.docs[1]?.ideas || [] , products : product_query.docs[2]?.products || []})
+
+        const personal_details_query = await the_database.find({
+            selector:
+            {
+                username: user
+            },
+            fields:
+            [
+                "username",
+                "password",
+                "email"
+            ]
+        })
+        const ideas_document = ideas_query.docs.find(d => d.ideas);
+        const products_document = product_query.docs.find(d => d.products);
+        console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
+        return response.json({username: personal_details_query.docs[0]?.username || "",password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , products : products_document?.products || []})
     }
     catch
     {
