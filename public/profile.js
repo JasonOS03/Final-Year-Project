@@ -74,9 +74,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
 }); 
 
+update_button.addEventListener("click", async ()=>{
 async function update_profile()
 {
     try{
+        const idea_updates = Array.from(document.querySelectorAll(".input-idea")).map(inp => inp.value.trim());
+        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
+            product_array = []
+            const industries_array = [];
+            const industries = p.querySelectorAll(".industries-checkbox");
+            industries.forEach(industry => {
+            if(industry.checked)
+            {
+                industries_array.push(industry.id);
+            }
+        });
+
+        const subscriptions_array = []
+        const subscriptions = p.querySelectorAll(".subscription-checkbox");
+        subscriptions.forEach(sub =>{
+            if(sub.checked)
+            {
+            subscriptions_array.push(sub.id);
+            }
+        });
+
+
+
+         return {
+        description : p.querySelector(".product_description").value,
+        subscription_types : subscriptions_array,
+        prices : p.querySelector(".product_price").value,
+        price_range : p.querySelector(".price_range").value,
+        industries : industries_array
+
+        };
+        
+        });
+        
+        
         const update = await fetch("/update_profile",{
             method : "POST",
             headers:
@@ -84,9 +120,16 @@ async function update_profile()
                 "Content-Type":"application/json"
 
             },
-            credentials:"include"
+            credentials:"include",
+            body:JSON.stringify({
+                ideas:idea_updates,
+                products:products
+            })
         })
         const backend_update = await update.json();
+        console.log("Backend response: ",backend_update);
+
+        window.location.href = "homepage.html";
 
     }
     catch(err)
@@ -94,3 +137,5 @@ async function update_profile()
         console.error("Error sending profile updates to the backend: ",err)
     }
 }
+update_profile();
+});
