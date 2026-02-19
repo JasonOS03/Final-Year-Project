@@ -74,3 +74,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 }); 
 
+async function update_profile()
+{
+    try{
+        const update = await fetch("/update_profile",{
+            method : "POST",
+            headers:
+            {
+                "Content-Type":"application/json"
+
+            },
+            credentials:"include"
+        })
+        const backend_update = await update.json();
+
+    }
+    catch(err)
+    {
+        console.error("Error sending profile updates to the backend: ",err)
+    }
+}

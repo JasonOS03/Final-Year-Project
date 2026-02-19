@@ -408,7 +408,6 @@ RULES:
             return response.status(400).end("logout unsuccessful: bad request");
         }
     })
-    app.get("/debug-session", (req, res) => { res.json({ cookie: req.headers.cookie, session: req.session }); });
 
     app.get("/retrieve_details",async (request,response) =>{
         try{
@@ -465,6 +464,151 @@ RULES:
     }
     }
 )
+app.post("/update_profile",async (request,response) =>{
+
+        async function compare_profile()
+        {
+            try{
+           const ideas_query = await the_database.find({
+            selector:
+            {
+                    username : user
+                 
+            },
+            fields:
+            [
+                 "ideas",
+                "username"
+            ]
+            });
+            const product_query = await the_database.find({
+                selector:
+             {
+                    username : user
+                 
+            },
+            fields:
+            [
+                    "products",
+                    "username"
+            ]
+            });
+
+        const ideas_document = ideas_query.docs.find(d => d.ideas);
+        const products_document = product_query.docs.find(d => d.products);
+        const old_ideas = ideas_document?.ideas || [];
+        const old_products = products_document?.products || [];
+        let changed =  false;
+
+        const new_ideas = request.body.ideas;
+        const new_products =  request.body.products;
+
+        if(old_ideas.length != new_ideas.length || old_products.length != new_products.length )
+        {
+            changed = true;
+            generate_new_recommendation();
+        }
+        
+
+        console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
+        return response.json({username: personal_details_query.docs[0]?.username || "",password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , products : products_document?.products || []})
+    }
+    catch
+    {
+        return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
+    } 
+        }
+        async function generate_new_recommendation(){
+             try {
+                const username = request.body.username;
+                const products = request.body.products;
+                const ideas = request.body.ideas;
+
+                const the_products = JSON.stringify(products);
+                const the_ideas = JSON.stringify(ideas);
+
+
+                const api_prompt  = `For this SaaS startup, 
+                generate exactly 1 distinct product/service idea 
+                in the following format: 
+                1. idea 1 here
+                 based on this portfolio: ${the_products}
+                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
+                  other rules you must follow are:
+                  1. The output must not include summaries, intros or conclusions
+                  2. Exactly one unique recommendations must be generated
+                  3. Markdown must not be used
+                  4. do not add any text, whitespace of blank lines before the idea
+                  `;
+                // post the user prompt to the OpenRouter API
+                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost:3000", 
+                    "X-Title": "SaaS Idea Generator"
+                    
+                    },
+                    body: JSON.stringify(
+                        // indicates the AI model used
+                        {  model: "openrouter/auto", messages: [
+            { role: "system", content: "none" },
+            { role: "user", content: api_prompt } // sends the user prompt
+
+            ], max_tokens: 30 }) // sets a maximum token limit 
+
+        });
+        console.log("OpenRouter response status:", resp.status);
+
+        if (!resp.ok) 
+        {
+            const error_text = await resp.text();
+            console.error("Model API error:", error_text);
+            return response.status(resp.status).json({ error: error_text });
+        }
+
+            // asynchronously wait for the JSON response
+            const result = await resp.json();
+            console.log("OpenRouter result: ",result);
+            // parse the response and extract the text content
+
+            const message = result?.choices?.[0]?.message; 
+            const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+
+            const regex = /\n\s*(?=\d\.\s)/; 
+            const three_parts = response_content.split(regex); 
+            const parts_array = three_parts .map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
+
+            for( let i=0;i<three_parts.length;i++)
+            {
+                if(three_parts[i] != "")
+                {
+                    parts_array.push(three_parts[i].trim());
+                }
+            }
+            // insert the formatted response and the user prompt into the database
+            for(let i = 0;i<parts_array.length;i++){
+            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],id: i, date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,api_prompt, part:i+1});
+            }
+            // if no content is included in the response
+            if(parts_array.length === 0)
+            {
+                console.log("content is empty");
+            }
+            else
+            {
+                // return the content to the front-end in JSON form
+                response.json({output: parts_array});
+            }
+            } catch (err) {
+                console.error("Error inserting prompt to database",err);
+            }
+        }
+        });
+    
+        
     
 
 
