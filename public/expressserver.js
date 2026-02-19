@@ -466,8 +466,6 @@ RULES:
 )
 app.post("/update_profile",async (request,response) =>{
 
-        async function compare_profile()
-        {
             try{
            const ideas_query = await the_database.find({
             selector:
@@ -503,29 +501,31 @@ app.post("/update_profile",async (request,response) =>{
         const new_ideas = request.body.ideas;
         const new_products =  request.body.products;
 
-        if(old_ideas.length != new_ideas.length || old_products.length != new_products.length )
+        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length )
         {
             changed = true;
-            generate_new_recommendation();
+             await generate_new_recommendation(user,new_products,new_ideas);
         }
-        
+        ideas_document.ideas = new_ideas;
+        products_document.products = new_products;
+        await the_database.insert(ideas_document);
+        await the_database.insert(products_document);
 
-        console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
-        return response.json({username: personal_details_query.docs[0]?.username || "",password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , products : products_document?.products || []})
+        return response.json({success:true});
+
     }
     catch
     {
         return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
     } 
-        }
-        async function generate_new_recommendation(){
+        async function generate_new_recommendation(username,products,ideas){
              try {
-                const username = request.body.username;
-                const products = request.body.products;
-                const ideas = request.body.ideas;
+                const the_username = username;
+                const new_products = products;
+                const new_ideas = ideas;
 
-                const the_products = JSON.stringify(products);
-                const the_ideas = JSON.stringify(ideas);
+                const the_products = JSON.stringify(new_products);
+                const the_ideas = JSON.stringify(new_ideas);
 
 
                 const api_prompt  = `For this SaaS startup, 
@@ -577,30 +577,22 @@ app.post("/update_profile",async (request,response) =>{
             const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
 
             const regex = /\n\s*(?=\d\.\s)/; 
-            const three_parts = response_content.split(regex); 
-            const parts_array = three_parts .map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
-
-            for( let i=0;i<three_parts.length;i++)
-            {
-                if(three_parts[i] != "")
-                {
-                    parts_array.push(three_parts[i].trim());
-                }
-            }
+            const split_recomm = response_content.split(regex); 
+            const formatted_recomm = split_recomm.map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
             // insert the formatted response and the user prompt into the database
-            for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],id: i, date_inserted: new Date().toISOString()});
-            console.log("Inserted document:", { username,api_prompt, part:i+1});
-            }
+            
+            await the_database.insert({ username,api_prompt,recomm_text: formatted_recomm[0], date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,api_prompt,formatted_recomm});
+            
             // if no content is included in the response
-            if(parts_array.length === 0)
+            if(formatted_recomm.length === 0)
             {
                 console.log("content is empty");
             }
             else
             {
                 // return the content to the front-end in JSON form
-                response.json({output: parts_array});
+                return formatted_recomm[0];
             }
             } catch (err) {
                 console.error("Error inserting prompt to database",err);
