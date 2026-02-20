@@ -1,19 +1,12 @@
 const user_form = document.getElementById("prompt_form");
 const input = document.getElementById("promptbox");
-const response_container = document.getElementById("container");
-const response_container2 = document.getElementById("container2");
-const response_container3 = document.getElementById("container3");
-const response_text = document.getElementById("response1");
-const response_text2 = document.getElementById("response2");
-const response_text3 = document.getElementById("response3");
 const register_button = document.getElementById("register_button");
 const right_arrow = document.getElementById("right_arrow");
 const left_arrow = document.getElementById("left_arrow");
-const carousel = document.getElementById("carousel");
+const carousel  = document.getElementById("carousel");
 
 
-const containers = [response_container,response_container2,response_container3];
-const container_texts = [response_text,response_text2,response_text3];
+
 const view_buttons = document.querySelectorAll(".view_full_recomm");
 
 
@@ -30,18 +23,18 @@ try{
     console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
     let res = backend_response.output;
 
-    const carousel_inner = document.querySelector("carousel-inner");
-    const carousel  = document.getElementById("carousel");
-    const indicators = document.querySelector("carousel-indicators");
+    const carousel_inner = document.querySelector(".carousel-inner");
+    const indicators = document.querySelector(".carousel-indicators");
    
     res.forEach((recommendation,i) =>{
         const list_item = document.createElement("li");
         list_item.setAttribute("data-bs-slide-to",i)
         list_item.setAttribute("data-bs-target","#carousel");
+        indicators.appendChild(list_item);
 
         const carousel_item = document.createElement("div");
-        const container = document.createElement("div");
-        const container_texts = 
+        carousel_inner.appendChild(carousel_item);
+        
 
         carousel_item.className = "carousel-item"
         if(i===0)
@@ -49,35 +42,36 @@ try{
             carousel_item.className = "carousel-item active"
         }
 
-        container.innerHTML = `<div class = "row justify-content-center">
+        carousel_item.innerHTML = `<div class = "row justify-content-center">
             <div id = "container2" class = "col-md-6 bg-success text-center rounded p-4">
-                <p id="response" class = "text-white">${recommendation.recomm_text}/p>
+                <p id="response" class = "text-white">${recommendation.recomm_text}</p>
                 <br><br>
-                <button class = "bg-warning text-black p-1 rounded mb-2 view_full_recomm" id = "view_full_recomm2">View Full Recommendation</button>
+                <button class = "bg-warning text-black p-1 rounded mb-2 view_full_recomm" id = "view_full_recomm">View Full Recommendation</button>
             </div>
     </div>`
-    carousel_item.appendChild(container);
-    const response =  container.getElementById("response");
+    const container = carousel_item.querySelector(".col-md-6");
+    const response =  container.querySelector("#response");
     response.innerHTML = recommendation.recomm_text;
     response.dataset.id = recommendation.id;
     response.dataset.summary = recommendation.recomm_text;
+
+    const button = container.querySelector(".view_full_recomm");
     
-   
+    button.addEventListener("click",()=>{
+        expand(container,response,button);
     })
 
 
-    
 
-    
+    });
 
-        async function expand(container,i){
+
+        async function expand(container,response,button){
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
 
-        const clone_button = view_buttons[i].cloneNode(true)
-        clone_button.addEventListener("click",()=>{
-            expand(container,i);
-        })
+        button.style.display = "none";
+
         container.style.width = container_width *2.7 + "px";
         container.style.height = container_height *2.7 + "px";
         container.style.overflowY = "auto"
@@ -85,10 +79,6 @@ try{
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
 
-        if(container.contains(view_buttons[i]))
-        {
-            view_buttons[i].style.display = "none";
-        }
         const x_button = document.createElement("button")
         x_button.textContent = "X";
         x_button.style.top = 0;
@@ -96,13 +86,12 @@ try{
         x_button.style.position = "absolute";
         if(carousel.contains(left_arrow))
         {
-           left_arrow.style.display = "none";
+            left_arrow.style.display = "none";
         }
         if(carousel.contains(right_arrow))
         {
             right_arrow.style.display = "none";
         }
-
 
         try
         {
@@ -116,8 +105,8 @@ try{
                 credentials: "include",
                 body: JSON.stringify
                 ({
-                    id: Number(container_texts[i].dataset.id),
-                    summary:container_texts[i].dataset.summary
+                    id: Number(response.dataset.id),
+                    summary:response.dataset.summary
                 })
             })
             const resp = await detailed_summary.json();
@@ -142,7 +131,7 @@ try{
 
             container.innerHTML = `<h3>Summary</h3>
             <br><br>
-            <p>${container_texts[i].dataset.summary}</p>
+            <p>${response.dataset.summary}</p>
             <br><br>
             <h4>Detailed Summary</h4>
             <br><br>
@@ -164,7 +153,7 @@ try{
             container.appendChild(x_button);
 
             x_button.addEventListener("click",()=>{
-                collapse(container);
+                collapse(container,response,container_height,container_width,button);
             });
 
             document.getElementById("risk_level").textContent = risk_level;
@@ -188,21 +177,23 @@ try{
         {
             console.error("Failed to send summary to the backend, error: ",err);
         }
-        function collapse(container){
+        function collapse(container,response,container_height,container_width,button){
             container.style.width = container_width + "px";
             container.style.height = container_height  + "px";
             container.style.boxShadow = "";
             container.style.outline  = "";
 
             container.innerHTML = "";
-            container.appendChild(container_texts[i]);
-            container.appendChild(view_buttons[i]);
-            view_buttons[i].style.display = "block";
-            view_buttons[i].style.position = "absolute";
-            view_buttons[i].style.bottom = "1px";
-            view_buttons[i].style.left = "50%";
+            container.appendChild(response);
+            container.appendChild(button);
+            button.style.display = "block";
+            right_arrow.style.display = "block";
+            left_arrow.style.display = "block";
+            button.style.position = "absolute";
+            button.style.bottom = "1px";
+            button.style.left = "50%";
             container.style.overflowY = "hidden";
-            view_buttons[i].style.transform = "translateX(-50%)";
+            button.style.transform = "translateX(-50%)";
             const numbers = document.querySelector(".carousel-indicators");
             numbers.style.bottom = "-14px";
             if(!carousel.contains(left_arrow))
@@ -217,26 +208,15 @@ try{
             x_button.remove();
             }
 
-        x_button.addEventListener("click",()=>{
-
-            collapse(container);
-        });
     }
-    containers.forEach((container,i)=>{
-        view_buttons[i].addEventListener("click",()=>{
-            expand(container,i);
-        });
-
-    });
    
-
-
  
   // remove double quotes from the response
 }catch(err)
 {
     console.log("failed to retrieve recommendation");
 }
+
 
 });
 
