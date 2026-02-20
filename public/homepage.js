@@ -29,14 +29,43 @@ try{
     const backend_response = await retrieval.json();
     console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
     let res = backend_response.output;
-   
-  
 
-    for( let i = 0;i<res.length;i++){
-        container_texts[i].innerHTML = res[i].recomm_text;
-        container_texts[i].dataset.id = res[i].id;
-        container_texts[i].dataset.summary = res[i].recomm_text;
-    }
+    const carousel_inner = document.querySelector("carousel-inner");
+    const carousel  = document.getElementById("carousel");
+    const indicators = document.querySelector("carousel-indicators");
+   
+    res.forEach((recommendation,i) =>{
+        const list_item = document.createElement("li");
+        list_item.setAttribute("data-bs-slide-to",i)
+        list_item.setAttribute("data-bs-target","#carousel");
+
+        const carousel_item = document.createElement("div");
+        const container = document.createElement("div");
+        const container_texts = 
+
+        carousel_item.className = "carousel-item"
+        if(i===0)
+        {
+            carousel_item.className = "carousel-item active"
+        }
+
+        container.innerHTML = `<div class = "row justify-content-center">
+            <div id = "container2" class = "col-md-6 bg-success text-center rounded p-4">
+                <p id="response" class = "text-white">${recommendation.recomm_text}/p>
+                <br><br>
+                <button class = "bg-warning text-black p-1 rounded mb-2 view_full_recomm" id = "view_full_recomm2">View Full Recommendation</button>
+            </div>
+    </div>`
+    carousel_item.appendChild(container);
+    const response =  container.getElementById("response");
+    response.innerHTML = recommendation.recomm_text;
+    response.dataset.id = recommendation.id;
+    response.dataset.summary = recommendation.recomm_text;
+    
+   
+    })
+
+
     
 
     
