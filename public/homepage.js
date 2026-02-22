@@ -25,22 +25,26 @@ try{
 
     const carousel_inner = document.querySelector(".carousel-inner");
     const indicators = document.querySelector(".carousel-indicators");
+
+    indicators.innerHTML = ""; 
+    carousel_inner.innerHTML = "";
    
     res.forEach((recommendation,i) =>{
         const list_item = document.createElement("li");
         list_item.setAttribute("data-bs-slide-to",i)
         list_item.setAttribute("data-bs-target","#carousel");
-        indicators.appendChild(list_item);
-
         const carousel_item = document.createElement("div");
-        carousel_inner.appendChild(carousel_item);
         
 
         carousel_item.className = "carousel-item"
         if(i===0)
         {
-            carousel_item.className = "carousel-item active"
+            list_item.classList.add("active");
+            carousel_item.classList.add("active");
         }
+         indicators.appendChild(list_item);
+         carousel_inner.appendChild(carousel_item);
+        
 
         carousel_item.innerHTML = `<div class = "row justify-content-center">
             <div id = "container2" class = "col-md-6 bg-success text-center rounded p-4">
