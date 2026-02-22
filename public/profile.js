@@ -72,6 +72,45 @@ document.addEventListener("DOMContentLoaded", () => {
     } 
     load_details(); 
 
+    let idea_number = 3;
+    add_ideas_button.addEventListener("click",()=>
+    {
+     const label = document.createElement("label");
+     label.className = "text-black form-label";
+     label.textContent = "Idea " + ++idea_number;
+
+     const idea_input = document.createElement("input");
+     idea_input.className = "form-control mb-2 input-idea";
+     idea_input.type = "text";
+     idea_input.placeholder = "Please enter a product/service idea";
+
+     idea_list.appendChild(label);
+     idea_list.appendChild(idea_input);
+    }
+    )
+    let product_count = 1;
+    add_products_button.addEventListener("click",()=>{
+    const product = document.querySelector(".individual-product");
+    const duplicate = product.cloneNode(true);  
+
+    duplicate.querySelector(".product-header").textContent = "Product " + ++product_count
+
+    duplicate.querySelectorAll("input").forEach(input => {
+        if(input.type === "text")
+        {
+            input.value = "";
+        }
+        else if(input.type === "checkbox")
+        {
+            input.checked = false;
+        }
+    });
+
+    product_portfolio.appendChild(duplicate);
+
+})
+
+
 }); 
 
 update_button.addEventListener("click", async ()=>{
@@ -128,6 +167,12 @@ async function update_profile()
         })
         const backend_update = await update.json();
         console.log("Backend response: ",backend_update);
+
+        if(!update.ok)
+        {
+            console.error("Failed update: ",backend_update);
+            return;
+        }
 
         window.location.href = "homepage.html";
 
