@@ -513,7 +513,7 @@ app.post("/update_profile",async (request,response) =>{
         const new_ideas = request.body.ideas;
         const new_products =  request.body.products;
 
-        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length )
+        if(JSON.stringify(old_ideas) !== JSON.stringify(new_ideas) || JSON.stringify(old_products) !== JSON.stringify(new_products))
         {
             changed = true;
         }
@@ -534,9 +534,24 @@ app.post("/update_profile",async (request,response) =>{
     } 
         async function generate_new_recommendation(username,products,ideas){
              try {
-
+                const user = request.session.username;
                 const the_products = JSON.stringify(products);
                 const the_ideas = JSON.stringify(ideas);
+                const recs_query = await the_database.find({
+                    selector:
+                    {
+                        username:user
+                    },
+                    fields:
+                    [
+                        "username",
+                         "_id",
+                        "recomm_text"
+                    ]
+                }
+                );
+
+                const recommendations = ideas_query.docs.find(d => d.ideas)
 
 
                 const api_prompt  = `For this SaaS startup, 
