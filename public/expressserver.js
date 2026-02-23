@@ -1,4 +1,3 @@
-
 const express = require("express");
 const fetch = require("node-fetch");
 const cookieparser = require('cookie-parser');
@@ -270,11 +269,6 @@ app.use(
         
         });
 
-        app.listen(3000, ()=>
-        {
-            console.log("listening on port 3000")
-        }
-        );
     app.post("/retrieve_full_summary",async (request,response) =>
     {
         console.log("retrieve_full_summary route HIT");
@@ -513,7 +507,7 @@ app.post("/update_profile",async (request,response) =>{
         const new_ideas = request.body.ideas;
         const new_products =  request.body.products;
 
-        if(JSON.stringify(old_ideas) !== JSON.stringify(new_ideas) || JSON.stringify(old_products) !== JSON.stringify(new_products))
+        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length )
         {
             changed = true;
         }
@@ -532,65 +526,25 @@ app.post("/update_profile",async (request,response) =>{
     {
         return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
     } 
-        });
         async function generate_new_recommendation(username,products,ideas){
              try {
-                
-            const old_recs = await retrieve_old_recs(the_database,username)
-            const created_prompt = await prompt_build(products,ideas,old_recs);
-            // asynchronously wait for the JSON response
-            const result = await send_prompt(created_prompt);
-            // parse the response and extract the text content
 
-             const rec = await parse_response(result);
-            // insert the formatted response and the user prompt into the database
-        
-            
-            // if no content is included in the response
-            if(!rec)
-            {
-                console.log("content is empty");
-            }
-            else
-            {
+                const the_products = JSON.stringify(products);
+                const the_ideas = JSON.stringify(ideas);
 
-                await insert_to_database(username,rec,created_prompt,the_database);
-                // return the content to the front-end in JSON form
-                return rec;
-            }
-            } catch (err) {
-                console.error("Error inserting prompt to database",err);
-                throw err;
-            }
-        }
-        async function extract_recs(docs)
-        {
-            const old_recs = docs.map(doc => doc.recomm_text).filter(recomm=>recomm !== null);
-            return old_recs
-        }
-     async function retrieve_old_recs(the_database,username)
-    {
-        const recs_query = await the_database.find({
-                    selector:
-                    {
-                        username
-                    },
-                    fields:
-                    [
-                        "username",
-                         "_id",
-                        "recomm_text"
-                    ]
-                }
-                );
 
-               
-
-                return extract_recs(recs_query.docs)
-    }
-    async function send_prompt(prompt)
-    {
-       
+                const api_prompt  = `For this SaaS startup, 
+                generate exactly 1 distinct product/service idea 
+                in the following format: 
+                1. idea 1 here
+                 based on this portfolio: ${the_products}
+                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
+                  other rules you must follow are:
+                  1. The output must not include summaries, intros or conclusions
+                  2. Exactly one unique recommendations must be generated
+                  3. Markdown must not be used
+                  4. do not add any text, whitespace of blank lines before the idea
+                  `;
                 // post the user prompt to the OpenRouter API
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -605,11 +559,13 @@ app.post("/update_profile",async (request,response) =>{
                         // indicates the AI model used
                         {  model: "openrouter/auto", messages: [
             { role: "system", content: "none" },
-            { role: "user", content: prompt } // sends the user prompt
+            { role: "user", content: api_prompt } // sends the user prompt
 
             ], max_tokens: 30 }) // sets a maximum token limit 
 
         });
+        console.log("OpenRouter response status:", resp.status);
+
         if (!resp.ok) 
         {
             const error_text = await resp.text();
@@ -619,60 +575,41 @@ app.post("/update_profile",async (request,response) =>{
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
-            return result;
-    }
-    function parse_response(result)
-    {
-        const message = result?.choices?.[0]?.message; 
-        if(!message)
-        {
-            return "";
+            console.log("OpenRouter result: ",result);
+            // parse the response and extract the text content
+
+            const message = result?.choices?.[0]?.message; 
+            const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+
+            const regex = /\n\s*(?=\d\.\s)/; 
+            const split_recomm = response_content.split(regex); 
+            const formatted_recomm = split_recomm.map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
+            // insert the formatted response and the user prompt into the database
+            
+            await the_database.insert({ username,api_prompt,recomm_text: formatted_recomm[0], date_inserted: new Date().toISOString()});
+            console.log("Inserted document:", { username,api_prompt,formatted_recomm});
+            
+            // if no content is included in the response
+            if(formatted_recomm.length === 0)
+            {
+                console.log("content is empty");
+            }
+            else
+            {
+                // return the content to the front-end in JSON form
+                return formatted_recomm[0];
+            }
+            } catch (err) {
+                console.error("Error inserting prompt to database",err);
+                throw err;
+            }
         }
-        const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
-
-        const regex = /\n\s*(?=\d\.\s)/; 
-        const split_recomm = response_content.split(regex); 
-        const formatted_recomm = split_recomm.map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
-
-        return formatted_recomm[0] || "";
-    }
-     async function insert_to_database(username,text,prompt,db)
-    {
-        return db.insert({
-            username,
-            api_prompt:prompt,
-            recomm_text:text,
-            date_inserted: new Date().toISOString()
         });
+         if(require.main === module){
+        app.listen(3000, ()=>
+        {
+            console.log("listening on port 3000")
+        }
+        );
     }
-    async function prompt_build(products,ideas,recs)
-    {
-        const the_products = JSON.stringify(products);
-        const the_ideas = JSON.stringify(ideas);
-        const the_recs = JSON.stringify(recs);
-        
-         const api_prompt  = `For this SaaS startup, 
-                generate exactly 1 distinct product/service idea 
-                in the following format: 
-                1. idea 1 here
-                 based on this portfolio: ${the_products}
-                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
-                  other rules you must follow are:
-                  1. The output must not include summaries, intros or conclusions
-                  2. Exactly one unique recommendation must be generated.
-                  3. The recommendation must be unique compared to these recommendations: ${the_recs}
-                  3. Markdown must not be used
-                  4. do not add any text, whitespace of blank lines before the idea
-                  `;
-
-                  return api_prompt;
-        
-    }
-        
-    
-
-
-
-
-
-
+    module.exports = app;
