@@ -88,6 +88,12 @@ try{
         view_competitor_button.classList.add("bg-warning text-black p-1 rounded mb-2 view-competitor");
         container.appendChild(view_competitor_button);
 
+        view_competitor_button.addEventListener("click",()=>
+        {
+                create_modal();
+                create_modal_table();
+        })
+
         
 
         const x_button = document.createElement("button")
@@ -265,4 +271,26 @@ function create_modal()
         modal_body.classList.add("modal-body");
 
 
+}
+function create_modal_table()
+{
+    const table =  document.createElement("table");
+    const table_row1 =  document.createElement("tr");
+    const company_name =  document.createElement("th");
+    company_name.textContent = "Company Name";
+    const product_name =  document.createElement("th");
+    product_name.textContent = "Product Name";
+    const product_price = document.createElement("th");
+    product_price.textContent = "Product Price";
+    const market_share = document.createElement("th");
+    market_share.textContent = "Product Market Share";
+    const items_sold = document.createElement("th");
+    items_sold.textContent = "Users/Items Sold (Estimated)";
+
+    table.appendChild(table_row1);
+    table_row1.appendChild(company_name);
+    table_row1.appendChild(product_name);
+    table_row1.appendChild(product_price);
+    table_row1.appendChild(market_share);
+    table_row1.appendChild(items_sold);
 }
