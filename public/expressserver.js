@@ -268,6 +268,21 @@ app.use(
             }
         
         });
+    app.post("/retrieve_competitor_data",async (request,response)=>{
+        try
+        {
+            const summary = request.body.summary;
+            const id = Number(request.body.id);
+            const competitor_data_prompt = `Based on this product/service recommendation summary for an SaaS startup: ${summary} find and display the latest SaaS competitor data with the following structure`
+
+            call_api(competitor_data_prompt);
+        }
+        catch
+        {
+
+
+        }
+    })
 
     app.post("/retrieve_full_summary",async (request,response) =>
     {
@@ -605,6 +620,41 @@ app.post("/update_profile",async (request,response) =>{
             }
         }
         });
+         async function call_api(prompt)
+        {
+                // post the user prompt to the OpenRouter API
+                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost:3000", 
+                    "X-Title": "SaaS Idea Generator"
+                    
+                    },
+                    body: JSON.stringify(
+                        // indicates the AI model used
+                        {  model: "openrouter/auto", messages: [
+            { role: "system", content: "none" },
+            { role: "user", content: api_prompt } // sends the user prompt
+
+            ], max_tokens: 30 }) // sets a maximum token limit 
+
+            });
+            console.log("OpenRouter response status:", resp.status);
+
+            if (!resp.ok) 
+            {
+            const error_text = await resp.text();
+            console.error("Model API error:", error_text);
+            throw new Error(error_text);
+            }
+
+            // asynchronously wait for the JSON response
+            const result = await resp.json();
+            console.log("OpenRouter result: ",result);
+            return result;
+        }
          if(require.main === module){
         app.listen(3000, ()=>
         {
