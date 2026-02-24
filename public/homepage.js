@@ -34,6 +34,7 @@ try{
         list_item.setAttribute("data-bs-slide-to",i)
         list_item.setAttribute("data-bs-target","#carousel");
         const carousel_item = document.createElement("div");
+
         
 
         carousel_item.className = "carousel-item"
@@ -82,6 +83,12 @@ try{
         container.style.position = "relative";
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
+
+        const view_competitor_button = document.createElement("button");
+        view_competitor_button.classList.add("bg-warning text-black p-1 rounded mb-2 view-competitor");
+        container.appendChild(view_competitor_button);
+
+        
 
         const x_button = document.createElement("button")
         x_button.textContent = "X";
@@ -223,3 +230,39 @@ try{
 
 
 });
+function create_modal()
+{
+        const modal_div =  document.createElement("div");
+        modal_div.classList.add("modal fade");
+        const document_div = document.createElement("div");
+        document_div.classList.add("modal-dialog modal-dialog-centered");
+        document_div.setAttribute("role","document");
+        modal_div.appendChild(document_div);
+
+        const content_div =  document.createElement("div");
+        content_div.classList.add("modal-content");
+        document_div.appendChild(content_div);
+
+        const header_div = document.createElement("div");
+        header_div.classList.add("modal-header");
+        content_div.appendChild(header_div);
+
+        const title = document.createElement("h4");
+        title.classList.add("modal-title");
+        title.id = "modal_title";
+        title.textContent = "Competitor Data";
+        header_div.appendChild(title);
+
+        const close_modal_button = document.createElement("button");
+        close_modal_button.classList.add("close");
+        close_modal_button.setAttribute("data-bs-dismiss","modal");
+        close_modal_button.type = "button";
+        close_modal_button.ariaLabel = "Close modal";
+        close_modal_button.textContent = "X";
+        header_div.appendChild(close_modal_button);
+
+        const modal_body = document.createElement("div");
+        modal_body.classList.add("modal-body");
+
+
+}
