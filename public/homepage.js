@@ -227,7 +227,7 @@ try{
 
     }
    
- 
+     create_competitor_button();
   // remove double quotes from the response
 }catch(err)
 {
@@ -293,4 +293,44 @@ function create_modal_table()
     table_row1.appendChild(product_price);
     table_row1.appendChild(market_share);
     table_row1.appendChild(items_sold);
+}
+async function get_competitor_data(summary,id)
+{
+    try{
+        const competitor =  await fetch("/get_competitor_data",
+            {
+                method: "POST",
+                headers:
+                {
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify
+                ({
+                    id: Number(response.dataset.id),
+                    summary:response.dataset.summary
+                })
+            }
+        )
+        const response = await competitor.json();
+    }
+    catch
+    {
+        console.log("failed to retrieve competitor data");
+    }
+}
+
+function create_competitor_button()
+{
+        const view_competitor_button = document.createElement("button");
+        view_competitor_button.classList.add("bg-warning text-black p-1 rounded mb-2 view-competitor");
+        document.appendChild(view_competitor_button);
+        return  view_competitor_button
+}
+function handle_click(view_competitor_button)
+{
+    view_competitor_button.addEventListener("click",()=>
+    {
+        create_modal();
+        create_modal_table();
+    })
 }
