@@ -273,7 +273,10 @@ app.use(
         {
             const summary = request.body.summary;
             const id = Number(request.body.id);
-            const competitor_data_prompt = `Based on this product/service recommendation summary for an SaaS startup: ${summary} find and display the latest SaaS competitor data with the following structure`
+            const competitor_data_prompt = `Based on this product/service recommendation summary for an SaaS startup: ${summary} find and display between 3-6 SaaS company names which are potential competitors with the following structure:
+            <competitor name 1>
+            <competitor name 2>
+            <competitor name 3>`
 
             call_api(competitor_data_prompt);
         }
