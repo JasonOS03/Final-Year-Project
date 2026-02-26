@@ -191,6 +191,18 @@
 
                     <label class = "text-center text-black form-label"> Competitor Name:  </label>
                     <input class = "form-control mb-2 competitor-name" type = "text">
+                    
+                    <label class = "text-center text-black mb-2" for = "position">Competitor Market Position: </label>
+                    <select name = "position" id = "position" class = "form-select">
+                        <option value = "new_entrant">New Entrant</option>
+                        <option value = "niche">Small/Niche</option>
+                        <option value = "established">Established</option>
+                        <option value  = "market_leader">Market Leader</option>
+                        <option value = "unknown">Unknown</option>
+                    </select>
+
+                    <label class = "text-center text-black mb-2">Links/Sources: </label>
+                    <input class = "form-control mb-2 target-audience" type = "url">
                 
                     <div class = "individual-product">
                     <label class = "text-center text-black mb-2">Product name: </label>
@@ -199,151 +211,91 @@
                     <label class = "text-center text-black mb-2">Target Audience: </label>
                     <input class = "form-control mb-2 target-audience" type = "text">
 
+
                     <label class = "text-center text-black mb-2">Product Categories</label>
                     <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "marketing">
-                            <label class = "text-center text-black form-check-label" for = "marketing">Marketing</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "product_marketing" value = "product_marketing">
+                            <label class = "text-center text-black form-check-label">Marketing</label>
                         </div>
                      
                         <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "sales">
-                            <label class = "text-center text-black" for = "sales">Sales & CRM</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "sales_crm" value = "sales_crm">
+                            <label class = "text-center text-black">Sales & CRM</label>
                         </div>
                         
                         <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "e_commerce">
-                            <label class = "text-center text-black" for = "e_commerce">E-Commerce</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "e_commerce" value = "e_commerce">
+                            <label class = "text-center text-black">E-Commerce</label>
                         </div>
 
                         <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "dev_tools">
-                            <label class = "text-center text-black form-check-label" for = "dev_tools">Developer Tools</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "dev_tools" value = "dev_tools">
+                            <label class = "text-center text-black form-check-label">Developer Tools</label>
                         </div>
 
 
                         <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "analytics">
-                            <label class = "text-center text-black form-check-label" for = "analytics">Analytics</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "analytics_tools" value = "analytical_tools">
+                            <label class = "text-center text-black form-check-label">Analytics</label>
                         </div>
 
                         <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "cyber_security">
-                            <label class = "text-center text-black form-check-label" for = "cyber_security">Cybersecurity</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "security" value = "security">
+                            <label class = "text-center text-black form-check-label">Cybersecurity</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "financial">
-                            <label class = "text-center text-black form-check-label" for = "financial">Financial Tech</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "FinTech" value = "FinTech">
+                            <label class = "text-center text-black form-check-label">Financial Tech</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "educational">
-                            <label class = "text-center text-black form-check-label" for = "educational">Educational Tech</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "edTech" value = "EdTech">
+                            <label class = "text-center text-black form-check-label">Educational Tech</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "health">
-                            <label class = "text-center text-black form-check-label" for = "health">Health Tech</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "health" value = "health">
+                            <label class = "text-center text-black form-check-label">Health Tech</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "HR">
-                            <label class = "text-center text-black form-check-label" for = "HR">HR</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "hr" value = "hr">
+                            <label class = "text-center text-black form-check-label">HR</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "collab_tools">
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "collab_tools">
                             <label class = "text-center text-black form-check-label" for = "collab_tools">Collaborative Tools</label>
                         </div>
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "ai_tools">
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "ai_tools">
                             <label class = "text-center text-black form-check-label" for = "ai_tools">AI Tools</label>
                         </div>
 
-                        <label class = "text-center text-black mb-2">Product Categories</label>
-                    <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "marketing">
-                            <label class = "text-center text-black form-check-label" for = "marketing">Marketing</label>
-                        </div>
-                     
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "sales">
-                            <label class = "text-center text-black" for = "sales">Sales & CRM</label>
-                        </div>
                         
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "e_commerce">
-                            <label class = "text-center text-black" for = "e_commerce">E-Commerce</label>
-                        </div>
-
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "sales">
-                            <label class = "text-center text-black form-check-label" for = "sales">Developer Tools</label>
-                        </div>
-
-
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "analytics">
-                            <label class = "text-center text-black form-check-label" for = "analytics">Analytics</label>
-                        </div>
-
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "cyber_security">
-                            <label class = "text-center text-black form-check-label" for = "cyber_security">Cybersecurity</label>
-                        </div>
-
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "financial">
-                            <label class = "text-center text-black form-check-label" for = "financial">Financial Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "educational">
-                            <label class = "text-center text-black form-check-label" for = "educational">Educational Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "financial">
-                            <label class = "text-center text-black form-check-label" for = "financial">Health Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "HR">
-                            <label class = "text-center text-black form-check-label" for = "HR">HR</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "collab_tools">
-                            <label class = "text-center text-black form-check-label" for = "collab_tools">Collaborative Tools</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "ai_tools">
-                            <label class = "text-center text-black form-check-label" for = "ai_tools">AI Tools</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "customer_support">
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "customer_support">
                             <label class = "text-center text-black form-check-label" for = "customer_support">Customer Support</label>
                         </div>
 
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "project_management">
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "project_management">
                             <label class = "text-center text-black form-check-label" for = "project_management">Project Management</label>
                         </div>
 
 
                         <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" id = "other_selection">
-                            <label class = "text-center text-black form-check-label" for = "other_selection">Other</label>
+                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "other">
+                            <label class = "text-center text-black form-check-label" for = "other">Other</label>
                         </div>
                         </div>
 
                     
 
-                    <label class = "text-center text-black form-label">Price Range: </label>
+                    <label class = "text-center text-black form-label">Price Range(Estimated): </label>
                     <div class = "justify-content-between d-flex">
                         <span>0</span>
                         <span>5000</span>
@@ -360,6 +312,7 @@
 
 
                 </div>
+
                     <button class = "form-control mb-2 mt-4" id = "add_competitor">+</button>
                 </div>
             </div>
