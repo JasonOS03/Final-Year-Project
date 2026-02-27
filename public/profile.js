@@ -71,28 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
             const competitors  = document.querySelectorAll(".individual-competitor");
-            competitors.forEach((comp,i),()=>{
-                const competitor_name  = comp.querySelector("competitor-name");
+            competitors.forEach((comp,i) =>{
+                const competitor_name  = comp.querySelector(".competitor-name");
                 competitor_name.value = profile.competitor[i].competitor_name;
 
-                const market_position = document.getElementById("position");
+                const market_position = comp.querySelector(".position");
                 market_position.value =  profile.competitor[i].market_position
 
-                const sources = document.querySelector(".link-source");
+                const sources = comp.querySelector(".link-source");
                 sources.value = profile.competitor[i].source
 
-                const products = document.querySelectorAll(".individual-product");
-                products.forEach((product,i) =>{
+                const products = comp.querySelectorAll(".individual-product");
+                products.forEach((product,j) =>{
                 const product_name = product.querySelector(".product-name");
-                product_name.value = profile.competitor[i].products[i].product_name;
+                product_name.value = profile.competitor[i].products[j].product_name;
 
                 const target_audience = product.querySelector(".target-audience");
-                target_audience.value = profile.competitor[i].products[i].target_audience;
+                target_audience.value = profile.competitor[i].products[j].target_audience;
 
 
                 const categories = document.querySelectorAll(".categories-checkbox")
                 categories.forEach((category) =>{
-                    if(profile.competitors[i].categories,includes(category.value)
+                    if(profile.competitors[i].categories.includes(category.value)
                     )
                 {
                     category.checked = true;
@@ -206,7 +206,48 @@ async function update_profile()
         };
         
         });
+        const competitors = Array.from(document.querySelectorAll(".individual-competitor")).map(comp =>{
+
+            const competitor_name = comp.querySelector(".competitor-name").value
+            const market_position = comp.querySelector(".position").value
+            const sources = comp.querySelector(".link-source").value
+        // create an array of values for each individual product 
+        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
+            const product_name =  p.querySelector(".product-name");
+            const target_audience = p.querySelector(".target-audience");
+            categories_array = []; //initialise empty product array
+             // initialise empty industries array
+            const categories = p.querySelectorAll(".categories-checkbox");
+            categories.forEach(category => {
+            // if a particular industry box is checked, push the value to the array
+            if(category.checked)
+            {
+                categories_array.push(category.value);
+            }
+        });
+
+       const price_range = p.querySelector(".price_range");
+
+
+
+        // return the descriptiom, subscription types array, prices, price range and industries array
+         return {
+        product_name : product_name.value,
+        target_audience: target_audience.value,
+        categories: categories_array,
+        price_range: price_range.value
+
+        };
         
+        });
+        return {
+        competitor : competitor_name.value,
+        market_pos: market_position.value,
+        source: sources.value,
+        products: products
+
+        };
+        });
         // send a POST method to the backend to update the profile
         const update = await fetch("/update_profile",{
             method : "POST",
@@ -218,7 +259,8 @@ async function update_profile()
             credentials:"include",
             body:JSON.stringify({ // include the products and ideas in the body
                 ideas:idea_updates,
-                products:products
+                products:products,
+                competitors:competitors
             })
         })
         // asynchronously wait for the response
@@ -232,7 +274,10 @@ async function update_profile()
         }
 
         // once a successfull response is retrieved, redirect the user to the homepage
-        window.location.href = "homepage.html";
+        setTimeout(()=>{
+             window.location.href = "homepage.html";
+        },2000);
+        
 
     }
     catch(err)

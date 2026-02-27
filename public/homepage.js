@@ -85,8 +85,7 @@ try{
         container.style.boxShadow = "0 0 10px black";
 
         const view_competitor_button = document.createElement("button");
-        view_competitor_button.classList.add("bg-warning text-black p-1 rounded mb-2 view-competitor");
-        container.appendChild(view_competitor_button);
+        view_competitor_button.classList.add("bg-warning", "text-black","p-1", "rounded", "mb-2", "view-competitor");
 
         view_competitor_button.addEventListener("click",()=>
         {
