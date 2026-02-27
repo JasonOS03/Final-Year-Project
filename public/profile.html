@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'; object-src 'none';">
 </head>
 <body>
     <nav class = "navbar bg-warning mb-2">
@@ -27,7 +28,7 @@
             <input class = "form-control mb-2" type = "text" id  = "update_uname">
 
             <label class = "text-white form-label text-center d-inline-block">Password: </label>
-            <input class = "form-control mb-2" type = "text" id = "update_password">
+            <input class = "form-control mb-2" type = "password" id = "update_password">
 
             <label class = "text-white form-label text-center d-inline-block">Email: </label>
             <input class = "form-control mb-2" type = "text" id = "update_email">
@@ -192,8 +193,8 @@
                     <label class = "text-center text-black form-label"> Competitor Name:  </label>
                     <input class = "form-control mb-2 competitor-name" type = "text">
                     
-                    <label class = "text-center text-black mb-2" for = "position">Competitor Market Position: </label>
-                    <select name = "position" id = "position" class = "form-select">
+                    <label class = "text-center text-black mb-2">Competitor Market Position: </label>
+                    <select name = "position" class = "form-select position">
                         <option value = "new_entrant">New Entrant</option>
                         <option value = "niche">Small/Niche</option>
                         <option value = "established">Established</option>
@@ -202,7 +203,7 @@
                     </select>
 
                     <label class = "text-center text-black mb-2">Links/Sources: </label>
-                    <input class = "form-control mb-2 target-audience" type = "url">
+                    <input class = "form-control mb-2 link-source" type = "url">
                 
                     <div class = "individual-product">
                     <label class = "text-center text-black mb-2">Product name: </label>
