@@ -153,7 +153,7 @@ register_button.addEventListener("click",async (e)=>{
         industries.forEach(industry => {
             if(industry.checked)
             {
-                industries_array.push(industry.id);
+                industries_array.push(industry.value);
             }
         });
 
@@ -162,7 +162,7 @@ register_button.addEventListener("click",async (e)=>{
         subscriptions.forEach(sub =>{
             if(sub.checked)
             {
-            subscriptions_array.push(sub.id);
+            subscriptions_array.push(sub.value);
             }
         });
 
@@ -198,7 +198,79 @@ register_button.addEventListener("click",async (e)=>{
          const response = await product_details.json();
          console.log(response);
 
-         const generate_recommendations = await fetch("/generate_recommendations", {
+         
+    }
+    catch(error)
+    {
+        console.error("failed to send product portfolio to the backend");
+    }
+    const competitors = Array.from(document.querySelectorAll(".individual-competitor")).map(comp =>{
+
+            const competitor_name = comp.querySelector(".competitor-name").value
+            const market_position = comp.querySelector(".position").value
+            const sources = comp.querySelector(".link-source").value
+        // create an array of values for each individual product 
+        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
+            const product_name =  p.querySelector(".product-name");
+            const target_audience = p.querySelector(".target-audience");
+            categories_array = []; //initialise empty product array
+             // initialise empty industries array
+            const categories = p.querySelectorAll(".categories-checkbox");
+            categories.forEach(category => {
+            // if a particular industry box is checked, push the value to the array
+            if(category.checked)
+            {
+                categories_array.push(category.value);
+            }
+        });
+
+       const price_range = p.querySelector(".price_range");
+
+
+
+        // return the description, subscription types array, prices, price range and industries array
+         return {
+        product_name : product_name.value,
+        target_audience: target_audience.value,
+        categories: categories_array,
+        price_range: price_range.value
+
+        };
+        
+        });
+        return {
+        competitor : competitor_name.value,
+        market_pos: market_position.value,
+        source: sources.value,
+        products: products
+
+        };
+        });
+        
+    try
+    {
+        const competitors =  await fetch("/competitor_details",{
+            method: "POST",
+            headers:
+            {
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify(
+                {
+                    username:u_name,
+                    competitors:competitors
+                }
+            )
+
+        })
+    }
+    catch(error)
+    {
+        console.error("failed to send competitor details to the backend");
+    }
+
+    try{
+        const generate_recommendations = await fetch("/generate_recommendations", {
             method : "POST",
             headers:
             {
@@ -215,10 +287,9 @@ register_button.addEventListener("click",async (e)=>{
          console.log(resp.output);
 
          window.location.href = "index.html";
-    }
-    catch(error)
+    }catch
     {
-        console.error("failed to send product portfolio to the backend");
+
     }
 
 

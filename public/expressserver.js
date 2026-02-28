@@ -174,6 +174,22 @@ app.use(
         }
     })
 
+    app.post("/competitor_details",async(request,response)=>{
+            const competitors = request.body.competitors;
+            const username = request.body.username;
+            try
+            {
+            await the_database.insert({username:username,competitors:competitors});
+            console.log("Inserted user's competitor details into the database");
+            response.json({success: true, message: "data saved successfully"})
+            }
+            catch(err)
+            {
+            console.error("error inserting the data into the database",err);
+            response.status(400).end("data unsuccessfully inserted into database");
+            }
+    })
+
     app.post("/generate_recommendations",async (request,response) => 
     {
             try {
@@ -273,6 +289,16 @@ app.use(
         {
             const summary = request.body.summary;
             const id = Number(request.body.id);
+            const database_check = await the_database.find(
+                    {
+                        selector: {username,id:Number(id)}
+                    
+                });
+
+                if(database_check.docs.length === 1 && database_check.docs[0].competitors)
+                {
+                    return response.json({output: database_check.docs[0].competitors});
+                }
             const competitor_data_prompt = `Based on this product/service recommendation summary for an SaaS startup: ${summary} find and display between 3-6 SaaS company names which are potential competitors with the following structure:
             <competitor name 1>
             <competitor name 2>
@@ -471,15 +497,31 @@ RULES:
                 "password",
                 "email"
             ]
-        })
+        });
+        const competitors_query = await the_database.find({
+          selector:
+          {
+                 username : user
+                 
+          },
+          fields:
+          [
+                "competitors",
+                "username"
+          ]
+        });
         const ideas_document = ideas_query.docs.find(d => d.ideas);
         const products_document = product_query.docs.find(d => d.products);
+        const competitors_document = competitors_query.docs.find(d=>d.competitors)
         console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
-        return response.json({username: personal_details_query.docs[0]?.username || "",password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , products : products_document?.products || []})
+        return response.json({username: personal_details_query.docs[0]?.username || "",
+            password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
+            products : products_document?.products || [],
+            competitors : competitors_document?.competitors || []})
     }
     catch
     {
-        return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
+        return response.status(500).json({error: "Could not retrieve the user's idea list,product portfolio or entered competitor details"});
     }
     }
 )
@@ -515,17 +557,35 @@ app.post("/update_profile",async (request,response) =>{
                     "username"
             ]
             });
+            const competitor_query = await the_database.find({
+                selector:
+             {
+                    username : user
+                 
+            },
+            fields:
+            [
+                    "_id",
+                    "_rev",
+                    "competitors",
+                    "username"
+            ]
+            });
+           
 
         const ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
         const products_document = product_query.docs.find(d => d.products !== undefined);
+        const competitors_document = competitor_query.docs.find(comp => comp.competitors !== undefined);
         const old_ideas = ideas_document?.ideas || [];
         const old_products = products_document?.products || [];
+        const old_competitors = competitors_document?.competitors || [];
         let changed =  false;
 
         const new_ideas = request.body.ideas;
         const new_products =  request.body.products;
+        const new_competitors = request.body.competitors
 
-        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length )
+        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length || old_competitors.length !== new_competitors.length )
         {
             changed = true;
         }
@@ -534,8 +594,10 @@ app.post("/update_profile",async (request,response) =>{
         }
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
+        competitors_document.competitors = new_competitors;
         await the_database.insert(ideas_document);
         await the_database.insert(products_document);
+        await the_database.insert(competitors_document);
 
         return response.json({success:true});
 
@@ -544,6 +606,7 @@ app.post("/update_profile",async (request,response) =>{
     {
         return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
     } 
+    });
         async function generate_new_recommendation(username,products,ideas){
              try {
 
@@ -622,7 +685,7 @@ app.post("/update_profile",async (request,response) =>{
                 throw err;
             }
         }
-        });
+       
          async function call_api(prompt)
         {
                 // post the user prompt to the OpenRouter API
