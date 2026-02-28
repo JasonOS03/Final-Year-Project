@@ -134,7 +134,8 @@ try{
             const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-
+            const sources = lower_output.match(/sources[:\-–]\s*([^\n]+)/i)?.[1] ||
+             (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const risk_level =(
                 lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
                 lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
@@ -163,6 +164,8 @@ try{
             <label> Uniqueness of Product Idea</label>
             <p>${uniqueness}</p>
             <br><br>
+            <label>Sources:</label>
+            <p>${sources}</p>
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
