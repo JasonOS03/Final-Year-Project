@@ -228,8 +228,9 @@ try{
             }
 
     }
-   
-     create_competitor_button();
+    // function call for competitor button creation
+     const comp_button = create_competitor_button();
+     handle_click(comp_button);
   // remove double quotes from the response
 }catch(err)
 {
@@ -296,7 +297,7 @@ function create_modal_table()
     table_row1.appendChild(market_share);
     table_row1.appendChild(items_sold);
 }
-async function get_competitor_data(summary,id)
+async function get_competitor_data(summary,id,products,ideas)
 {
     try{
         const competitor =  await fetch("/get_competitor_data",
@@ -309,11 +310,14 @@ async function get_competitor_data(summary,id)
                 body: JSON.stringify
                 ({
                     id: Number(response.dataset.id),
-                    summary:response.dataset.summary
+                    summary:response.dataset.summary,
+                    products: response.dataset.products,
+                    ideas: response.dataset.ideas
                 })
             }
         )
         const response = await competitor.json();
+        console.log("Response received: ",response);
     }
     catch
     {

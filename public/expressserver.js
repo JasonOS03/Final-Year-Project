@@ -284,25 +284,86 @@ app.use(
             }
         
         });
-    app.post("/retrieve_competitor_data",async (request,response)=>{
+    app.post("/get_competitor_data",async (request,response)=>{
         try
         {
+            const username = request.session.username
             const summary = request.body.summary;
+            const competitors = request.body.competitors;
+            const ideas = request.body.ideas;
+            const products = request.body.products;
             const id = Number(request.body.id);
-            const database_check = await the_database.find(
-                    {
-                        selector: {username,id:Number(id)}
-                    
-                });
-
-                if(database_check.docs.length === 1 && database_check.docs[0].competitors)
+            const check_comp = await the_database.find(
                 {
-                    return response.json({output: database_check.docs[0].competitors});
+                    selector:
+                    {
+                        username:username
+                    },
+                    fields:
+                    [
+                        "competitors"
+                    ]
                 }
-            const competitor_data_prompt = `Based on this product/service recommendation summary for an SaaS startup: ${summary} find and display between 3-6 SaaS company names which are potential competitors with the following structure:
-            <competitor name 1>
-            <competitor name 2>
-            <competitor name 3>`
+            )
+
+
+            const summary_query = await the_database.find(
+                {
+                    selector: 
+                    {
+                        username:username,
+                        id:Number(id)
+                    },
+                    fields:
+                    [
+                        "recomm_text",
+                        "date_inserted",
+                        "id"
+                    ],
+                    sort:
+                    [
+                        {date_inserted:"desc"}
+                    ]
+                }
+            );
+             if(summary_query.docs.length === 1 && summary_query.docs[0].competitors)
+                {
+                    return response.json({output: summary_query.docs[0].competitors});
+                }
+
+                const the_summaries =  summary_query.map(s => s.recomm_text);
+
+        
+            const competitor_data_prompt = `Based on the following product/service recommendations for this SaaS startup: ${the_summaries} 
+            and these user entered competitors: ${competitors}
+            and the following product/service ideas entered by the SaaS startup: ${ideas}
+            and the following product portfolio entered by the startup: ${products} 
+            find and display between 3-6 SaaS company names which are potential competitors with the following structure:
+            Competitor <number>:
+            Competitor Name: <competitor name>
+            Market Position: <(New Entrant, Small/Niche, Established or Market Leader)>
+                Product 1:
+                Product Name: <product name>
+                Product Price(Estimated): <range>
+                Product Market Share(Estimated): <percentage expressed as an integer or decimal without symbols>
+                Items Sold/Number of Users: <integer>
+                Categories: <comma separated>
+              
+                  1. The output must not include summaries, intros or conclusions
+                  2. The market share must be expressed as a percentage
+                  3. no text can be added between each listed product
+                  4. Markdown must not be used
+                  5. Do not create new metrics that were not specified
+                  5. do not add any text, whitespace of blank lines before each competitor or product belonging to that
+                  6. do not add any text before the list of competitors or after the list
+                  7. Categories listed must match the categories from the user's product portfolio
+                  8. Each Competitor must have exactly one unique product/service listed
+                  `;
+
+
+
+                
+            
 
             call_api(competitor_data_prompt);
         }
