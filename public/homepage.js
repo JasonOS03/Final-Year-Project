@@ -12,6 +12,18 @@ const view_buttons = document.querySelectorAll(".view_full_recomm");
 
 document.addEventListener("DOMContentLoaded", async ()=>{
 try{
+    const retrieve_data = await fetch("/retrieve_details",{
+        method:"GET",
+        headers:
+        {
+            "Content-Type": "application/json"
+        }
+    })
+    const retrieval_response = await retrieve_data.json();
+    const competitors = retrieval_response.competitors;
+    const ideas = retrieval_response.ideas;
+    const products = retrieval_response.products;
+    handle_click(id,products,ideas,competitors);
     const retrieval = await fetch("/retrieve-recommendations",{
         method: "GET",
         headers: {
@@ -223,7 +235,10 @@ try{
     }
     // function call for competitor button creation
      const comp_button = create_competitor_button();
-     handle_click(comp_button);
+     document.body.appendChild(comp_button)
+     comp_button.addEventListener("click",
+        handle_click(id,products,ideas,competitors)
+     );
   // remove double quotes from the response
 }catch(err)
 {
@@ -271,9 +286,13 @@ function create_modal()
 function create_modal_table()
 {
     const table =  document.createElement("table");
+    const product_table = document.createElement("table");
     const table_row1 =  document.createElement("tr");
+    const product_table_row = document.createElement("tr");
     const company_name =  document.createElement("th");
     company_name.textContent = "Company Name";
+    const market_position = document.createElement("th");
+    market_position.textContent = "Market Position"
     const product_name =  document.createElement("th");
     product_name.textContent = "Product Name";
     const product_price = document.createElement("th");
@@ -282,13 +301,17 @@ function create_modal_table()
     market_share.textContent = "Product Market Share";
     const items_sold = document.createElement("th");
     items_sold.textContent = "Users/Items Sold (Estimated)";
+    const categories = document.createElement("th");
+    categories.textContent = "Categories";
 
     table.appendChild(table_row1);
+    product_table.appendChild(product_table_row);
     table_row1.appendChild(company_name);
-    table_row1.appendChild(product_name);
-    table_row1.appendChild(product_price);
-    table_row1.appendChild(market_share);
-    table_row1.appendChild(items_sold);
+    table_row1.appendChild(market_position);
+    product_table_row.appendChild(product_name);
+    product_table_row.appendChild(product_price);
+    product_table_row.appendChild(market_share);
+    product_table_row.appendChild(items_sold);
 }
 async function get_competitor_data(id,products,ideas,competitors)
 {
@@ -325,30 +348,63 @@ function create_competitor_button()
         document.appendChild(view_competitor_button);
         return  view_competitor_button
 }
-function handle_click(view_competitor_button)
+function handle_click(id,products,ideas,competitors)
 {
-    view_competitor_button.addEventListener("click",async()=>
+    return async() =>
     {
         create_modal();
-        const created_modal = create_modal_table();
+        const {table, product_table} = create_modal_table();
         const competitor_data_retrieval = await get_competitor_data(id,products,ideas,competitors);
+        const lower_output = competitor_data_retrieval.output.toLowerCase();
 
             const competitor_name = lower_output.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const sources = lower_output.match(/sources[:\-–]\s*([^\n]+)/i)?.[1] ||
+            const market_position = lower_output.match(/market position[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const product_name = lower_output.match(/product name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const product_price = lower_output.match(/product price[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_share = lower_output.match(/market share[:\-–]\s*([^\n]+)/i)?.[1] ||
              (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const risk_level =(
-                lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
-                lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
-                lower_output.match(/overall\s*risk[:\-–]\s*([^\n]+)/i)?.[1] ||
-                "undefined") + "";
+            const items_sold = lower_output.match(/Items Sold[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const categories = lower_output.match(/Categories[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
 
         competitors.forEach((competitor,i)=>{
-            const table_row = created_modal.table.createElement("tr");
-            created_modal.table.appendChild(table_row);
+            const table_row = document.createElement("tr");
+            table.appendChild(table_row);
+
+            const td = document.createElement("td");
+            td.textContent = competitor_name;
+
+            const td2 = document.createElement("td");
+            td2.textContent = market_position;
+
+            table_row.appendChild(td);
+            table_row.appendChild(td2);
+
+            products.forEach((product,i)=>{
+                const product_table_row2 = document.createElement("tr");
+
+                const td3 = table_row.createElement("td");
+                td3.textContent = product_name;
+
+                const td4 = table_row.createElement("td");
+                td4.textContent = product_price;
+
+                const td5 = table_row.createElement("td");
+                td5.textContent = market_share;
+
+                const td6 = table_row.createElement("td");
+                td6.textContent = items_sold;
+
+                const td7 = table_row.createElement("td");
+                td7.textContent = categories;
+
+                product_table_row2.appendChild(td3);
+                product_table_row2.appendChild(td4);
+                product_table_row2.appendChild(td5);
+                product_table_row2.appendChild(td6);
+                product_table_row2.appendChild(td7);
+                product_table.appendChild(product_table_row2);
+            })
 
         })
-    })
+    }
 }
