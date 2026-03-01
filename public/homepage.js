@@ -23,6 +23,9 @@ try{
     console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
     let res = backend_response.output;
 
+     const view_competitor_button = document.createElement("button");
+    view_competitor_button.classList.add("bg-warning", "text-black","p-1", "rounded", "mb-2", "view-competitor");
+
     const carousel_inner = document.querySelector(".carousel-inner");
     const indicators = document.querySelector(".carousel-indicators");
 
@@ -83,17 +86,7 @@ try{
         container.style.position = "relative";
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
-
-        const view_competitor_button = document.createElement("button");
-        view_competitor_button.classList.add("bg-warning", "text-black","p-1", "rounded", "mb-2", "view-competitor");
-
-        view_competitor_button.addEventListener("click",()=>
-        {
-                create_modal();
-                create_modal_table();
-        })
-
-        
+ 
 
         const x_button = document.createElement("button")
         x_button.textContent = "X";
@@ -297,7 +290,7 @@ function create_modal_table()
     table_row1.appendChild(market_share);
     table_row1.appendChild(items_sold);
 }
-async function get_competitor_data(summary,id,products,ideas)
+async function get_competitor_data(id,products,ideas,competitors)
 {
     try{
         const competitor =  await fetch("/get_competitor_data",
@@ -309,10 +302,10 @@ async function get_competitor_data(summary,id,products,ideas)
                 },
                 body: JSON.stringify
                 ({
-                    id: Number(response.dataset.id),
-                    summary:response.dataset.summary,
-                    products: response.dataset.products,
-                    ideas: response.dataset.ideas
+                    id: Number(id),
+                    products:products,
+                    ideas:ideas,
+                    competitors:competitors
                 })
             }
         )
@@ -334,9 +327,28 @@ function create_competitor_button()
 }
 function handle_click(view_competitor_button)
 {
-    view_competitor_button.addEventListener("click",()=>
+    view_competitor_button.addEventListener("click",async()=>
     {
         create_modal();
-        create_modal_table();
+        const created_modal = create_modal_table();
+        const competitor_data_retrieval = await get_competitor_data(id,products,ideas,competitors);
+
+            const competitor_name = lower_output.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const sources = lower_output.match(/sources[:\-–]\s*([^\n]+)/i)?.[1] ||
+             (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const risk_level =(
+                lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
+                lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
+                lower_output.match(/overall\s*risk[:\-–]\s*([^\n]+)/i)?.[1] ||
+                "undefined") + "";
+
+        competitors.forEach((competitor,i)=>{
+            const table_row = created_modal.table.createElement("tr");
+            created_modal.table.appendChild(table_row);
+
+        })
     })
 }
