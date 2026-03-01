@@ -288,7 +288,6 @@ app.use(
         try
         {
             const username = request.session.username
-            const summary = request.body.summary;
             const competitors = request.body.competitors;
             const ideas = request.body.ideas;
             const products = request.body.products;
@@ -297,7 +296,8 @@ app.use(
                 {
                     selector:
                     {
-                        username:username
+                        username:username,
+                        competitors: {"$exists":true}
                     },
                     fields:
                     [
@@ -305,6 +305,10 @@ app.use(
                     ]
                 }
             )
+            if(check_comp.docs.length > 0)
+                {
+                    return response.json({output: check_comp.docs[0].competitors});
+                }
 
 
             const summary_query = await the_database.find(
@@ -312,13 +316,12 @@ app.use(
                     selector: 
                     {
                         username:username,
-                        id:Number(id)
+                        recomm_text:{"$exists":true}
                     },
                     fields:
                     [
                         "recomm_text",
-                        "date_inserted",
-                        "id"
+                        "date_inserted"
                     ],
                     sort:
                     [
@@ -326,15 +329,11 @@ app.use(
                     ]
                 }
             );
-             if(summary_query.docs.length === 1 && summary_query.docs[0].competitors)
-                {
-                    return response.json({output: summary_query.docs[0].competitors});
-                }
 
-                const the_summaries =  summary_query.map(s => s.recomm_text);
+                const the_summaries =  summary_query.docs.map(doc => doc.recomm_text);
 
         
-            const competitor_data_prompt = `Based on the following product/service recommendations for this SaaS startup: ${the_summaries} 
+            const competitor_data_prompt = `Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
             and these user entered competitors: ${competitors}
             and the following product/service ideas entered by the SaaS startup: ${ideas}
             and the following product portfolio entered by the startup: ${products} 
@@ -365,11 +364,13 @@ app.use(
                 
             
 
-            call_api(competitor_data_prompt);
+            const competitor_data = await call_api(competitor_data_prompt);
+            return response.json({competitor_data:competitor_data});
         }
-        catch
+        catch(err)
         {
-
+            console.error("Error: ",err);
+            return response.status(500).json({ error: "Backend failure", details: err.message }); 
 
         }
     })
@@ -763,7 +764,7 @@ app.post("/update_profile",async (request,response) =>{
                         // indicates the AI model used
                         {  model: "openrouter/auto", messages: [
             { role: "system", content: "none" },
-            { role: "user", content: api_prompt } // sends the user prompt
+            { role: "user", content: prompt } // sends the user prompt
 
             ], max_tokens: 30 }) // sets a maximum token limit 
 
@@ -780,7 +781,12 @@ app.post("/update_profile",async (request,response) =>{
             // asynchronously wait for the JSON response
             const result = await resp.json();
             console.log("OpenRouter result: ",result);
-            return result;
+
+            let competitor_result =
+            result?.choices?.[0]?.message?.content ||
+            result?.choices?.[0]?.text ||
+            "";
+            return competitor_result;
         }
          if(require.main === module){
         app.listen(3000, ()=>
