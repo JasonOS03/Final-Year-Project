@@ -23,7 +23,6 @@ try{
     const competitors = retrieval_response.competitors;
     const ideas = retrieval_response.ideas;
     const products = retrieval_response.products;
-    handle_click(id,products,ideas,competitors);
     const retrieval = await fetch("/retrieve-recommendations",{
         method: "GET",
         headers: {
@@ -35,8 +34,7 @@ try{
     console.log("RAW OUTPUT FROM BACKEND:", backend_response.output);
     let res = backend_response.output;
 
-     const view_competitor_button = document.createElement("button");
-    view_competitor_button.classList.add("bg-warning", "text-black","p-1", "rounded", "mb-2", "view-competitor");
+     
 
     const carousel_inner = document.querySelector(".carousel-inner");
     const indicators = document.querySelector(".carousel-indicators");
@@ -235,14 +233,14 @@ try{
     }
     // function call for competitor button creation
      const comp_button = create_competitor_button();
-     document.body.appendChild(comp_button)
+     carousel.parentNode.insertBefore(comp_button,carousel);
      comp_button.addEventListener("click",
-        handle_click(id,products,ideas,competitors)
+        handle_click(products,ideas,competitors)
      );
   // remove double quotes from the response
 }catch(err)
 {
-    console.log("failed to retrieve recommendation");
+    console.log("Error",err);
 }
 
 
@@ -250,9 +248,12 @@ try{
 function create_modal()
 {
         const modal_div =  document.createElement("div");
-        modal_div.classList.add("modal fade");
+        modal_div.classList.add("modal", "fade");
+        modal_div.tabIndex = -1;
+        modal_div.id = "competitor_modal";
+        modal_div.setAttribute("aria-hidden","true");
         const document_div = document.createElement("div");
-        document_div.classList.add("modal-dialog modal-dialog-centered");
+        document_div.classList.add("modal-dialog", "modal-dialog-centered");
         document_div.setAttribute("role","document");
         modal_div.appendChild(document_div);
 
@@ -271,15 +272,16 @@ function create_modal()
         header_div.appendChild(title);
 
         const close_modal_button = document.createElement("button");
-        close_modal_button.classList.add("close");
+        close_modal_button.classList.add("btn-close");
         close_modal_button.setAttribute("data-bs-dismiss","modal");
         close_modal_button.type = "button";
         close_modal_button.ariaLabel = "Close modal";
-        close_modal_button.textContent = "X";
         header_div.appendChild(close_modal_button);
 
         const modal_body = document.createElement("div");
         modal_body.classList.add("modal-body");
+        content_div.appendChild(modal_body);
+        document.body.appendChild(modal_div);
 
 
 }
@@ -312,8 +314,11 @@ function create_modal_table()
     product_table_row.appendChild(product_price);
     product_table_row.appendChild(market_share);
     product_table_row.appendChild(items_sold);
+    product_table_row.appendChild(categories);
+
+    return{ table,product_table };
 }
-async function get_competitor_data(id,products,ideas,competitors)
+async function get_competitor_data(products,ideas,competitors)
 {
     try{
         const competitor =  await fetch("/get_competitor_data",
@@ -325,7 +330,6 @@ async function get_competitor_data(id,products,ideas,competitors)
                 },
                 body: JSON.stringify
                 ({
-                    id: Number(id),
                     products:products,
                     ideas:ideas,
                     competitors:competitors
@@ -334,6 +338,7 @@ async function get_competitor_data(id,products,ideas,competitors)
         )
         const response = await competitor.json();
         console.log("Response received: ",response);
+        return response;
     }
     catch
     {
@@ -344,18 +349,18 @@ async function get_competitor_data(id,products,ideas,competitors)
 function create_competitor_button()
 {
         const view_competitor_button = document.createElement("button");
-        view_competitor_button.classList.add("bg-warning text-black p-1 rounded mb-2 view-competitor");
-        document.appendChild(view_competitor_button);
+        view_competitor_button.classList.add("bg-warning","text-black", "p-1", "rounded", "mb-2","view-competitor","mx-auto","d-block");
+        view_competitor_button.textContent = "View Competitors";
         return  view_competitor_button
 }
-function handle_click(id,products,ideas,competitors)
+function handle_click(products,ideas,competitors)
 {
     return async() =>
     {
         create_modal();
         const {table, product_table} = create_modal_table();
-        const competitor_data_retrieval = await get_competitor_data(id,products,ideas,competitors);
-        const lower_output = competitor_data_retrieval.output.toLowerCase();
+        const competitor_data_retrieval = await get_competitor_data(products,ideas,competitors);
+        const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
 
             const competitor_name = lower_output.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const market_position = lower_output.match(/market position[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
@@ -382,29 +387,38 @@ function handle_click(id,products,ideas,competitors)
             products.forEach((product,i)=>{
                 const product_table_row2 = document.createElement("tr");
 
-                const td3 = table_row.createElement("td");
+                const td3 = document.createElement("td");
                 td3.textContent = product_name;
 
-                const td4 = table_row.createElement("td");
+                const td4 = document.createElement("td");
                 td4.textContent = product_price;
 
-                const td5 = table_row.createElement("td");
+                const td5 = document.createElement("td");
                 td5.textContent = market_share;
 
-                const td6 = table_row.createElement("td");
+                const td6 = document.createElement("td");
                 td6.textContent = items_sold;
 
-                const td7 = table_row.createElement("td");
+                const td7 = document.createElement("td");
                 td7.textContent = categories;
 
+                product_table.appendChild(product_table_row2);
                 product_table_row2.appendChild(td3);
                 product_table_row2.appendChild(td4);
                 product_table_row2.appendChild(td5);
                 product_table_row2.appendChild(td6);
                 product_table_row2.appendChild(td7);
-                product_table.appendChild(product_table_row2);
+
             })
 
         })
+                const modal_body = document.querySelector("#competitor_modal .modal-body");
+                modal_body.innerHTML = ""; 
+                modal_body.appendChild(table); 
+                modal_body.appendChild(product_table);
+
+                const modal = document.getElementById("competitor_modal"); 
+                const the_modal = new bootstrap.Modal(modal);
+                the_modal.show();
     }
 }
