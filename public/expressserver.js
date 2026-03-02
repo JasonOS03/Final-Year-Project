@@ -689,7 +689,7 @@ app.post("/update_profile",async (request,response) =>{
                   4. do not add any text, whitespace of blank lines before the idea
                   `;
                 // post the user prompt to the OpenRouter API
-                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                const resp = await fetch("http://localhost:11434/api/generate", {
                     method: "POST",
                     headers: {
                     "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
@@ -700,11 +700,9 @@ app.post("/update_profile",async (request,response) =>{
                     },
                     body: JSON.stringify(
                         // indicates the AI model used
-                        {  model: "openrouter/auto", messages: [
-            { role: "system", content: "none" },
-            { role: "user", content: api_prompt } // sends the user prompt
-
-            ], max_tokens: 30 }) // sets a maximum token limit 
+                        { // sends the user prompt
+                        model: "llama3",
+                        prompt:prompt }) // sets a maximum token limit 
 
         });
         console.log("OpenRouter response status:", resp.status);
@@ -751,25 +749,21 @@ app.post("/update_profile",async (request,response) =>{
          async function call_api(prompt)
         {
                 // post the user prompt to the OpenRouter API
-                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                const resp = await fetch("http://localhost:11434/api/generate", {
                     method: "POST",
                     headers: {
-                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:3000", 
-                    "X-Title": "SaaS Idea Generator"
+                    "Content-Type": "application/json"  
                     
                     },
-                    body: JSON.stringify(
+                    body: JSON.stringify({
+                        model: "llama3",
+                        prompt: prompt,
+                        stream: false
                         // indicates the AI model used
-                        {  model: "openrouter/auto", messages: [
-            { role: "system", content: "none" },
-            { role: "user", content: prompt } // sends the user prompt
-
-            ], max_tokens: 30 }) // sets a maximum token limit 
+                }) // sets a maximum token limit 
 
             });
-            console.log("OpenRouter response status:", resp.status);
+            console.log("Ollama response status:", resp.status);
 
             if (!resp.ok) 
             {
@@ -780,11 +774,10 @@ app.post("/update_profile",async (request,response) =>{
 
             // asynchronously wait for the JSON response
             const result = await resp.json();
-            console.log("OpenRouter result: ",result);
+            console.log("Ollama result: ",result);
 
             let competitor_result =
-            result?.choices?.[0]?.message?.content ||
-            result?.choices?.[0]?.text ||
+            result.response ||
             "";
             return competitor_result;
         }

@@ -360,54 +360,45 @@ function handle_click(products,ideas,competitors)
         create_modal();
         const {table, product_table} = create_modal_table();
         const competitor_data_retrieval = await get_competitor_data(products,ideas,competitors);
+        if(!competitor_data_retrieval)
+        {
+            console.error("competitor data could not be found",competitor_data_retrieval);
+            return;
+        }
         const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
 
-            const competitor_name = lower_output.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const market_position = lower_output.match(/market position[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const product_name = lower_output.match(/product name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const product_price = lower_output.match(/product price[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const market_share = lower_output.match(/market share[:\-–]\s*([^\n]+)/i)?.[1] ||
-             (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const items_sold = lower_output.match(/Items Sold[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const categories = lower_output.match(/Categories[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
 
-        competitors.forEach((competitor,i)=>{
+        const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0);
+
+        comps.forEach((competitor,i)=>{
+            const competitor_name = competitor.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const market_position = competitor.match(/market position[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const table_row = document.createElement("tr");
+            table_row.innerHTML = 
+            `<td>${competitor_name}</td>
+            <td>${market_position}</td>
+            `;
             table.appendChild(table_row);
 
-            const td = document.createElement("td");
-            td.textContent = competitor_name;
-
-            const td2 = document.createElement("td");
-            td2.textContent = market_position;
-
-            table_row.appendChild(td);
-            table_row.appendChild(td2);
+            const products = competitor.split(/product \d+:/) .map(p => p.trim()) .filter(p => p.length > 0);
 
             products.forEach((product,i)=>{
-                const product_table_row2 = document.createElement("tr");
-
-                const td3 = document.createElement("td");
-                td3.textContent = product_name;
-
-                const td4 = document.createElement("td");
-                td4.textContent = product_price;
-
-                const td5 = document.createElement("td");
-                td5.textContent = market_share;
-
-                const td6 = document.createElement("td");
-                td6.textContent = items_sold;
-
-                const td7 = document.createElement("td");
-                td7.textContent = categories;
-
-                product_table.appendChild(product_table_row2);
-                product_table_row2.appendChild(td3);
-                product_table_row2.appendChild(td4);
-                product_table_row2.appendChild(td5);
-                product_table_row2.appendChild(td6);
-                product_table_row2.appendChild(td7);
+                const product_name = product.match(/product name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const product_price = product.match(/product price[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const market_share = product.match(/market share[:\-–]\s*([^\n]+)/i)?.[1] ||
+                (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const items_sold = product.match(/items sold[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const categories = product.match(/categories[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            
+                const product_table_row = document.createElement("tr");
+                product_table_row.innerHTML = 
+                `<td>${product_name}</td>
+                 <td>${product_price}</td>
+                 <td>${market_share}</td>
+                 <td>${items_sold}</td>
+                 <td>${categories}</td>
+                `;
+                product_table.appendChild(product_table_row);
 
             })
 
