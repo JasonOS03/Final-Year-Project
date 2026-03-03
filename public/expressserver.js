@@ -705,16 +705,16 @@ app.post("/update_profile",async (request,response) =>{
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
         competitors_document.competitors = new_competitors;
-        await the_database.put(ideas_document);
-        await the_database.put(products_document);
-        await the_database.put(competitors_document);
+        await the_database.insert(ideas_document);
+        await the_database.insert(products_document);
+        await the_database.insert(competitors_document);
 
         return response.json({success:true});
 
     }
-    catch
+    catch(err)
     {
-        return response.status(500).json({error: "Could not retrieve the user's idea list or product portfolio"});
+        return response.status(500).json({error:err.message});
     } 
     });
         async function generate_new_recommendation(username,products,ideas){
