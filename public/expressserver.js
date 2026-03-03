@@ -357,6 +357,26 @@ app.use(
                   6. do not add any text before the list of competitors or after the list
                   7. Categories listed must match the categories from the user's product portfolio
                   8. Each Competitor must have exactly one unique product/service listed
+                  9. You must only return JSON, and it must be returned in this exact structure:
+
+                {
+                "competitors": [
+                {
+                    "competitor_name": "",
+                    "market_position": "",
+                    "source": "",
+                "products": [
+                {
+                "product_name": "",
+                "product_price": "",
+                "market_share": "",
+                "items_sold": "",
+                "categories": []
+                }
+                ]
+            }
+        ]
+    }
                   `;
 
 
@@ -576,10 +596,21 @@ RULES:
         const products_document = product_query.docs.find(d => d.products);
         const competitors_document = competitors_query.docs.find(d=>d.competitors)
         console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
+        let compList = competitors_document?.competitors || [];
+
+
+    if (compList && compList.competitors) {
+        compList = compList.competitors;
+        }
+
+        if (compList.length > 0 && typeof compList[0] === "string") {
+        compList = []; // cannot use raw strings, so return empty structured list
+        }
+
         return response.json({username: personal_details_query.docs[0]?.username || "",
             password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
             products : products_document?.products || [],
-            competitors : competitors_document?.competitors || []})
+            competitor : compList})
     }
     catch
     {
@@ -635,9 +666,24 @@ app.post("/update_profile",async (request,response) =>{
             });
            
 
-        const ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
-        const products_document = product_query.docs.find(d => d.products !== undefined);
-        const competitors_document = competitor_query.docs.find(comp => comp.competitors !== undefined);
+        let ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
+        let products_document = product_query.docs.find(d => d.products !== undefined);
+        let competitors_document = competitor_query.docs[0];
+
+        if (!ideas_document) 
+            { ideas_document = 
+                { _id: user + "_ideas", username: user, ideas: [] }; } 
+        if (!products_document) 
+            { products_document = 
+                { _id: user + "_products", username: user, products: [] }; }
+         if (!competitors_document) 
+            { competitors_document = 
+                { _id: user + "_competitors", username: user, competitors: [] }; }
+        else if (!competitors_document.competitors)
+        {
+            competitors_document.competitors = [];
+        }
+
         const old_ideas = ideas_document?.ideas || [];
         const old_products = products_document?.products || [];
         const old_competitors = competitors_document?.competitors || [];
@@ -647,19 +693,21 @@ app.post("/update_profile",async (request,response) =>{
         const new_products =  request.body.products;
         const new_competitors = request.body.competitors
 
-        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length || old_competitors.length !== new_competitors.length )
+        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length)
         {
             changed = true;
         }
         if(changed){
             await generate_new_recommendation(user,new_products,new_ideas);
         }
+
+
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
         competitors_document.competitors = new_competitors;
-        await the_database.insert(ideas_document);
-        await the_database.insert(products_document);
-        await the_database.insert(competitors_document);
+        await the_database.put(ideas_document);
+        await the_database.put(products_document);
+        await the_database.put(competitors_document);
 
         return response.json({success:true});
 
@@ -689,41 +737,13 @@ app.post("/update_profile",async (request,response) =>{
                   4. do not add any text, whitespace of blank lines before the idea
                   `;
                 // post the user prompt to the OpenRouter API
-                const resp = await fetch("http://localhost:11434/api/generate", {
-                    method: "POST",
-                    headers: {
-                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:3000", 
-                    "X-Title": "SaaS Idea Generator"
-                    
-                    },
-                    body: JSON.stringify(
-                        // indicates the AI model used
-                        { // sends the user prompt
-                        model: "llama3",
-                        prompt:prompt }) // sets a maximum token limit 
-
-        });
-        console.log("OpenRouter response status:", resp.status);
-
-        if (!resp.ok) 
-        {
-            const error_text = await resp.text();
-            console.error("Model API error:", error_text);
-            throw new Error(error_text);
-        }
-
-            // asynchronously wait for the JSON response
-            const result = await resp.json();
-            console.log("OpenRouter result: ",result);
+                const result = await call_api(api_prompt);
             // parse the response and extract the text content
 
-            const message = result?.choices?.[0]?.message; 
-            const response_content = message.reasoning_details?.[0]?.summary?.trim() || message.reasoning?.trim() || message.content?.trim();
+            const message = result?.response?.trim() || ""; 
 
             const regex = /\n\s*(?=\d\.\s)/; 
-            const split_recomm = response_content.split(regex); 
+            const split_recomm = message.split(regex); 
             const formatted_recomm = split_recomm.map(p => p.trim()) .filter(p => /^\d\.\s/.test(p));
             // insert the formatted response and the user prompt into the database
             
@@ -775,11 +795,7 @@ app.post("/update_profile",async (request,response) =>{
             // asynchronously wait for the JSON response
             const result = await resp.json();
             console.log("Ollama result: ",result);
-
-            let competitor_result =
-            result.response ||
-            "";
-            return competitor_result;
+            return result;
         }
          if(require.main === module){
         app.listen(3000, ()=>

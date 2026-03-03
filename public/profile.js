@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const competitors  = document.querySelectorAll(".individual-competitor");
             competitors.forEach((comp,i) =>{
+                if (!profile.competitor || !profile.competitor[i]){ return;}
                 const competitor_name  = comp.querySelector(".competitor-name");
                 competitor_name.value = profile.competitor[i].competitor_name;
 
@@ -171,7 +172,7 @@ async function update_profile()
         // create an array of trimmed values fpr each idea input
         const idea_updates = Array.from(document.querySelectorAll(".input-idea")).map(inp => inp.value.trim());
         // create an array of values for each individual product 
-        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
+        const products = Array.from(document.querySelectorAll("#product_portfolio_div .individual-product")).map(p => {
 
             product_array = []; //initialise empty product array
             const industries_array = []; // initialise empty industries array
@@ -208,13 +209,13 @@ async function update_profile()
         });
         const competitors = Array.from(document.querySelectorAll(".individual-competitor")).map(comp =>{
 
-            const competitor_name = comp.querySelector(".competitor-name").value
-            const market_position = comp.querySelector(".position").value
-            const sources = comp.querySelector(".link-source").value
+            const competitor_name = comp.querySelector(".competitor-name")?.value || "";
+            const market_position = comp.querySelector(".position")?.value || "";
+            const sources = comp.querySelector(".link-source")?.value || "";
         // create an array of values for each individual product 
-        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
-            const product_name =  p.querySelector(".product-name");
-            const target_audience = p.querySelector(".target-audience");
+        const products = Array.from(comp.querySelectorAll(".individual-product")).map(p => {
+            const product_name =  p.querySelector(".product-name")?.value || "";
+            const target_audience = p.querySelector(".target-audience")?.value || "";
             categories_array = []; //initialise empty product array
              // initialise empty industries array
             const categories = p.querySelectorAll(".categories-checkbox");
@@ -226,24 +227,24 @@ async function update_profile()
             }
         });
 
-       const price_range = p.querySelector(".price_range");
+       const price_range = p.querySelector(".price_range")?.value || "";
 
 
 
         // return the descriptiom, subscription types array, prices, price range and industries array
          return {
-        product_name : product_name.value,
-        target_audience: target_audience.value,
+        product_name,
+        target_audience,
         categories: categories_array,
-        price_range: price_range.value
+        price_range
 
         };
         
         });
         return {
-        competitor : competitor_name.value,
-        market_pos: market_position.value,
-        source: sources.value,
+        competitor : competitor_name,
+        market_pos: market_position,
+        source: sources,
         products: products
 
         };

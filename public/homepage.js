@@ -380,15 +380,14 @@ function handle_click(products,ideas,competitors)
             `;
             table.appendChild(table_row);
 
-            const products = competitor.split(/product \d+:/) .map(p => p.trim()) .filter(p => p.length > 0);
+            const products = competitor.split(/product\s*\d*:/);
 
             products.forEach((product,i)=>{
-                const product_name = product.match(/product name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const product_price = product.match(/product price[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const market_share = product.match(/market share[:\-–]\s*([^\n]+)/i)?.[1] ||
-                (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const items_sold = product.match(/items sold[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const categories = product.match(/categories[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+               const product_name = product.match(/product name.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
+               const product_price = product.match(/product price.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
+               const market_share = product.match(/product market share.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
+               const items_sold = product.match(/items sold.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
+               const categories = product.match(/categories.*?:\s*([^\n]+)/i)?.[1] || "undefined";
             
                 const product_table_row = document.createElement("tr");
                 product_table_row.innerHTML = 
