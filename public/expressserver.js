@@ -305,6 +305,23 @@ app.use(
                     ]
                 }
             )
+
+            if(check_comp.docs.length >= 1 & check_comp.docs.competitors)
+            {
+                 return response.json({
+                                competitor_data: parsed_response.competitors
+                                .map((comp, i) => `Competitor ${i+1}:
+                                Competitor Name: ${comp.competitor_name}
+                                Market Position: ${comp.market_position}
+                                Product 1:
+                                Product Name: ${comp.products[0].product_name}
+                                Product Price: ${comp.products[0].product_price}
+                                Product Market Share: ${comp.products[0].market_share}
+                                Items Sold: ${comp.products[0].items_sold}
+                                Categories: ${comp.products[0].categories.join(", ")}`)
+                                .join("\n\n")
+                                });
+            }
            
 
             const summary_query = await the_database.find(
@@ -329,7 +346,12 @@ app.use(
                 const the_summaries =  summary_query.docs.map(doc => doc.recomm_text);
 
         
-            const competitor_data_prompt = `Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
+            const competitor_data_prompt = `
+            ONLY JSON MUST be returned and it MUST be valid
+            Do NOT add text or commentary before or after the JSON
+            If you cannot generate valid JSON: return {"competitors": []}
+            
+            Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
             and these user entered competitors: ${competitors}
             and the following product/service ideas entered by the SaaS startup: ${ideas}
             and the following product portfolio entered by the startup: ${products} 
@@ -366,10 +388,8 @@ app.use(
 
         ]
     }
-                IMPORTANT NOTE:
-                Do not add text or commentary before or after the JSON
-                You must only return valid JSON
-                only return the JSON object
+                RETURN ONLY THE JSON OBJECT
+                VALIDATE YOUR JSON BEFORE YOU RETURN IT
 
                   `;
 
@@ -379,7 +399,7 @@ app.use(
             
 
             const competitor_data = await call_api(competitor_data_prompt);
-            trimmed_response = competitor_data.response.trim().split(/(?={)/)[1]
+            const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
             const parsed_response =  JSON.parse(trimmed_response);
             parsed_response.competitors = parsed_response.competitors.map(c => ({
             competitor_name: c.competitor_name || c.competitor || "",
