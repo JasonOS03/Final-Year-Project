@@ -365,6 +365,7 @@ function handle_click(products,ideas,competitors)
             console.error("competitor data could not be found",competitor_data_retrieval);
             return;
         }
+        console.log("COMPETITOR DATA RAW:", competitor_data_retrieval);
         const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
 
 
@@ -380,9 +381,14 @@ function handle_click(products,ideas,competitors)
             `;
             table.appendChild(table_row);
 
-            const products = competitor.split(/product\s*\d*:/);
+            const products = competitor.split(/product\s*\d*:/).slice(1);
 
             products.forEach((product,i)=>{
+                trimmed_product = product.trim();
+                if(!trimmed_product)
+                {
+                    return;
+                }
                const product_name = product.match(/product name.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const product_price = product.match(/product price.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const market_share = product.match(/product market share.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 

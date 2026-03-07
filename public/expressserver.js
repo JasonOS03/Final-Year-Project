@@ -305,11 +305,7 @@ app.use(
                     ]
                 }
             )
-            if(check_comp.docs.length > 0)
-                {
-                    return response.json({output: check_comp.docs[0].competitors});
-                }
-
+           
 
             const summary_query = await the_database.find(
                 {
@@ -337,46 +333,44 @@ app.use(
             and these user entered competitors: ${competitors}
             and the following product/service ideas entered by the SaaS startup: ${ideas}
             and the following product portfolio entered by the startup: ${products} 
-            find and display between 3-6 SaaS company names which are potential competitors with the following structure:
-            Competitor <number>:
-            Competitor Name: <competitor name>
-            Market Position: <(New Entrant, Small/Niche, Established or Market Leader)>
-                Product 1:
-                Product Name: <product name>
-                Product Price(Estimated): <range>
-                Product Market Share(Estimated): <percentage expressed as an integer or decimal without symbols>
-                Items Sold/Number of Users: <integer>
-                Categories: <comma separated>
-              
+            find and display between 3-6 SaaS company names which are potential competitors with the following rules:
+
+                Rules:
                   1. The output must not include summaries, intros or conclusions
                   2. The market share must be expressed as a percentage
                   3. no text can be added between each listed product
                   4. Markdown must not be used
                   5. Do not create new metrics that were not specified
-                  5. do not add any text, whitespace of blank lines before each competitor or product belonging to that
-                  6. do not add any text before the list of competitors or after the list
-                  7. Categories listed must match the categories from the user's product portfolio
-                  8. Each Competitor must have exactly one unique product/service listed
-                  9. You must only return JSON, and it must be returned in this exact structure:
+                  6. do not add any text, whitespace of blank lines before each competitor or product belonging to that
+                  7. do not add any text before the list of competitors or after the list
+                  8. Categories listed must match the categories from the user's product portfolio
+                  9. Each Competitor must have exactly one unique product/service listed
+                  10. You must only return JSON, and it must be returned in this exact structure:
 
                 {
                 "competitors": [
                 {
-                    "competitor_name": "",
-                    "market_position": "",
-                    "source": "",
+                    "competitor_name": "string",
+                    "market_position": "string",
+                    "source": "string",
                 "products": [
                 {
-                "product_name": "",
-                "product_price": "",
-                "market_share": "",
-                "items_sold": "",
-                "categories": []
+                "product_name": "string",
+                "product_price": "string",
+                "market_share": "string",
+                "items_sold": "string",
+                "categories": ["string"]
                 }
                 ]
             }
+
         ]
     }
+                IMPORTANT NOTE:
+                Do not add text or commentary before or after the JSON
+                You must only return valid JSON
+                only return the JSON object
+
                   `;
 
 
@@ -385,7 +379,38 @@ app.use(
             
 
             const competitor_data = await call_api(competitor_data_prompt);
-            return response.json({competitor_data:competitor_data});
+            trimmed_response = competitor_data.response.trim().split(/(?={)/)[1]
+            const parsed_response =  JSON.parse(trimmed_response);
+            parsed_response.competitors = parsed_response.competitors.map(c => ({
+            competitor_name: c.competitor_name || c.competitor || "",
+            market_position: (c.market_position || c.market_pos || "").toLowerCase(),
+            source: c.source || "",
+            products: (c.products || []).map(p => ({
+                product_name: p.product_name || "",
+                product_price: p.product_price || p.price_range || "",
+                market_share: p.market_share || "",
+                items_sold: p.items_sold || "",
+                categories: p.categories || []
+                }))
+            }));
+            await the_database.insert({
+                username: username,
+                date_inserted: new Date().toISOString(),
+                competitors: parsed_response.competitors
+            })
+            return response.json({
+                                competitor_data: parsed_response.competitors
+                                .map((comp, i) => `Competitor ${i+1}:
+                                Competitor Name: ${comp.competitor_name}
+                                Market Position: ${comp.market_position}
+                                Product 1:
+                                Product Name: ${comp.products[0].product_name}
+                                Product Price: ${comp.products[0].product_price}
+                                Product Market Share: ${comp.products[0].market_share}
+                                Items Sold: ${comp.products[0].items_sold}
+                                Categories: ${comp.products[0].categories.join(", ")}`)
+                                .join("\n\n")
+                                });
         }
         catch(err)
         {
@@ -571,7 +596,9 @@ RULES:
         const personal_details_query = await the_database.find({
             selector:
             {
-                username: user
+                username: user,
+                password: {"$exists": true},
+                email: {"$exists": true}
             },
             fields:
             [
@@ -594,23 +621,34 @@ RULES:
         });
         const ideas_document = ideas_query.docs.find(d => d.ideas);
         const products_document = product_query.docs.find(d => d.products);
-        const competitors_document = competitors_query.docs.find(d=>d.competitors)
-        console.log("IDEAS QUERY RAW:", ideas_query); console.log("PRODUCT QUERY RAW:", product_query);
+        const competitors_document = competitors_query.docs.find(d=>Array.isArray(d.competitors) && d.competitors.length > 0);
+        console.log("COMPETITORS DOCUMENT:", JSON.stringify(competitors_document, null, 2));
+        console.log("IDEAS QUERY RAW:", ideas_query); 
+        console.log("PRODUCT QUERY RAW:", product_query);
+        // MIGRATION: Normalize old competitor schema to new schema
+        if (competitors_document) {
+            competitors_document.competitors = competitors_document.competitors.map(c => ({
+                competitor_name: c.competitor_name || c.competitor || "",
+                market_position: c.market_position || c.market_pos || "",
+                source: c.source || "",
+                products: (c.products || []).map(p => ({
+                    product_name: p.product_name || "",
+                    target_audience: p.target_audience || "",
+                    categories: p.categories || [],
+                    price_range: p.price_range || p.product_price || "",
+                    market_share: p.market_share || "",
+                    items_sold: p.items_sold || ""
+                }))
+            }));
+        }
+
         let compList = competitors_document?.competitors || [];
 
-
-    if (compList && compList.competitors) {
-        compList = compList.competitors;
-        }
-
-        if (compList.length > 0 && typeof compList[0] === "string") {
-        compList = []; // cannot use raw strings, so return empty structured list
-        }
 
         return response.json({username: personal_details_query.docs[0]?.username || "",
             password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
             products : products_document?.products || [],
-            competitor : compList})
+            competitors : compList})
     }
     catch
     {

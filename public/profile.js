@@ -72,37 +72,37 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const competitors  = document.querySelectorAll(".individual-competitor");
             competitors.forEach((comp,i) =>{
-                if (!profile.competitor || !profile.competitor[i]){ return;}
+                if (!profile.competitors || !profile.competitors[i]){ return;}
                 const competitor_name  = comp.querySelector(".competitor-name");
-                competitor_name.value = profile.competitor[i].competitor_name;
+                competitor_name.value = profile.competitors[i].competitor_name;
 
                 const market_position = comp.querySelector(".position");
-                market_position.value =  profile.competitor[i].market_position
+                market_position.value =  profile.competitors[i].market_position
 
                 const sources = comp.querySelector(".link-source");
-                sources.value = profile.competitor[i].source
+                sources.value = profile.competitors[i].source
 
                 const products = comp.querySelectorAll(".individual-product");
                 products.forEach((product,j) =>{
                 const product_name = product.querySelector(".product-name");
-                product_name.value = profile.competitor[i].products[j].product_name;
+                product_name.value = profile.competitors[i].products[j].product_name;
 
                 const target_audience = product.querySelector(".target-audience");
-                target_audience.value = profile.competitor[i].products[j].target_audience;
+                target_audience.value = profile.competitors[i].products[j].target_audience;
 
 
-                const categories = document.querySelectorAll(".categories-checkbox")
+                const categories = product.querySelectorAll(".categories-checkbox")
                 categories.forEach((category) =>{
-                    if(profile.competitors[i].categories.includes(category.value)
+                    if(profile.competitors[i].products[j].categories.includes(category.value)
                     )
                 {
                     category.checked = true;
                 }
+                });
 
-                const price_range = document.querySelector(".price_range");
-                price_range.value = profile.competitors[i].price_range;
+                const price_range = product.querySelector(".price_range");
+                price_range.value = profile.competitors[i].products[j].price_range;
 
-                })
 
                 })
             })
