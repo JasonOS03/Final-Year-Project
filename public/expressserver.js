@@ -759,6 +759,16 @@ app.post("/update_profile",async (request,response) =>{
             await generate_new_recommendation(user,new_products,new_ideas);
         }
 
+        if(JSON.stringify(old_competitors) !== JSON.stringify(new_competitors))
+        {
+           const generated_response = await generate_competitor_data(user,new_products,new_ideas,new_competitors )
+            await the_database.insert({
+                username: username,
+                date_inserted: new Date().toISOString(),
+                competitors: generated_response.competitors
+            })
+        }
+
 
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
@@ -775,6 +785,84 @@ app.post("/update_profile",async (request,response) =>{
         return response.status(500).json({error:err.message});
     } 
     });
+        async function parse_competitor_data(competitor_data)
+        {
+            const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
+            const parsed_response =  JSON.parse(trimmed_response);
+            parsed_response.competitors = parsed_response.competitors.map(c => ({
+            competitor_name: c.competitor_name || c.competitor || "",
+            market_position: (c.market_position || c.market_pos || "").toLowerCase(),
+            source: c.source || "",
+            products: (c.products || []).map(p => ({
+                product_name: p.product_name || "",
+                product_price: p.product_price || p.price_range || "",
+                market_share: p.market_share || "",
+                items_sold: p.items_sold || "",
+                categories: p.categories || []
+                }))
+            }));
+
+            return parsed_response;
+        }
+        async function generate_competitor_data(username,products,ideas,competitors){
+            try{
+                const the_products = JSON.stringify(products);
+                const the_ideas = JSON.stringify(ideas);
+
+                const competitor_data_prompt = `
+                    ONLY JSON MUST be returned and it MUST be valid
+                    Do NOT add text or commentary before or after the JSON
+                    If you cannot generate valid JSON: return {"competitors": []}
+                    
+                    Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
+                    and these user entered competitors: ${competitors}
+                    and the following product/service ideas entered by the SaaS startup: ${ideas}
+                    and the following product portfolio entered by the startup: ${products} 
+                    find and display between 3-6 SaaS company names which are potential competitors with the following rules:
+
+                        Rules:
+                        1. The output must not include summaries, intros or conclusions
+                        2. The market share must be expressed as a percentage
+                        3. no text can be added between each listed product
+                        4. Markdown must not be used
+                        5. Do not create new metrics that were not specified
+                        6. do not add any text, whitespace of blank lines before each competitor or product belonging to that
+                        7. do not add any text before the list of competitors or after the list
+                        8. Categories listed must match the categories from the user's product portfolio
+                        9. Each Competitor must have exactly one unique product/service listed
+                        10. You must only return JSON, and it must be returned in this exact structure:
+
+                        {
+                        "competitors": [
+                        {
+                            "competitor_name": "string",
+                            "market_position": "string",
+                            "source": "string",
+                        "products": [
+                        {
+                        "product_name": "string",
+                        "product_price": "string",
+                        "market_share": "string",
+                        "items_sold": "string",
+                        "categories": ["string"]
+                        }
+                        ]
+                        }
+
+                    ]
+                }
+                        RETURN ONLY THE JSON OBJECT
+                        VALIDATE YOUR JSON BEFORE YOU RETURN IT
+
+                        `;
+                const competitor_data =  await call_api(competitor_data_prompt);
+               return await parse_competitor_data(competitor_data);
+
+
+
+
+            }
+        }
         async function generate_new_recommendation(username,products,ideas){
              try {
 
