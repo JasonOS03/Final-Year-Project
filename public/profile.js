@@ -71,29 +71,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
             const competitors  = document.querySelectorAll(".individual-competitor");
-            competitors.forEach((comp,i) =>{
-                if (!profile.competitors || !profile.competitors[i]){ return;}
+                for(let i = 0; i < competitors.length;i++){
+                if (!profile.user_entered_competitors || !profile.user_entered_competitors[i]){ continue;}
+                const comp = competitors[i];
                 const competitor_name  = comp.querySelector(".competitor-name");
-                competitor_name.value = profile.competitors[i].competitor_name;
+                competitor_name.value = profile.user_entered_competitors[i].competitor;
 
                 const market_position = comp.querySelector(".position");
-                market_position.value =  profile.competitors[i].market_position
+                market_position.value =  profile.user_entered_competitors[i].market_pos
 
                 const sources = comp.querySelector(".link-source");
-                sources.value = profile.competitors[i].source
+                sources.value = profile.user_entered_competitors[i].source
 
                 const products = comp.querySelectorAll(".individual-product");
                 products.forEach((product,j) =>{
                 const product_name = product.querySelector(".product-name");
-                product_name.value = profile.competitors[i].products[j].product_name;
+                product_name.value = profile.user_entered_competitors[i].products[j].product_name;
 
                 const target_audience = product.querySelector(".target-audience");
-                target_audience.value = profile.competitors[i].products[j].target_audience;
+                target_audience.value = profile.user_entered_competitors[i].products[j].target_audience;
 
 
                 const categories = product.querySelectorAll(".categories-checkbox")
                 categories.forEach((category) =>{
-                    if(profile.competitors[i].products[j].categories.includes(category.value)
+                    if(profile.user_entered_competitors[i].products[j].categories.includes(category.value)
                     )
                 {
                     category.checked = true;
@@ -101,11 +102,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const price_range = product.querySelector(".price_range");
-                price_range.value = profile.competitors[i].products[j].price_range;
+                price_range.value = profile.user_entered_competitors[i].products[j].price_range;
 
 
                 })
-            })
+            }
 
         } // if registration details cannot be found, print an error message to the console
         catch(err) {

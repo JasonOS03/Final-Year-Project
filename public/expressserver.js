@@ -179,7 +179,7 @@ app.use(
             const username = request.body.username;
             try
             {
-            await the_database.insert({username:username,competitors:competitors});
+            await the_database.insert({username:username,user_entered_competitors:competitors});
             console.log("Inserted user's competitor details into the database");
             response.json({success: true, message: "data saved successfully"})
             }
@@ -297,19 +297,20 @@ app.use(
                     selector:
                     {
                         username:username,
-                        competitors: {"$exists":true}
+                        ai_generated_competitors: {"$exists":true}
                     },
                     fields:
                     [
-                        "competitors"
+                        "ai_generated_competitors"
                     ]
                 }
             )
 
-            if(check_comp.docs.length >= 1 & check_comp.docs.competitors)
+            if(check_comp.docs.length >= 1 && check_comp.docs[0].ai_generated_competitors)
             {
+                const cached_data =  check_comp.docs[0].ai_generated_competitors
                  return response.json({
-                                competitor_data: parsed_response.competitors
+                                competitor_data: cached_data
                                 .map((comp, i) => `Competitor ${i+1}:
                                 Competitor Name: ${comp.competitor_name}
                                 Market Position: ${comp.market_position}
@@ -324,113 +325,15 @@ app.use(
             }
            
 
-            const summary_query = await the_database.find(
-                {
-                    selector: 
-                    {
-                        username:username,
-                        recomm_text:{"$exists":true}
-                    },
-                    fields:
-                    [
-                        "recomm_text",
-                        "date_inserted"
-                    ],
-                    sort:
-                    [
-                        {date_inserted:"desc"}
-                    ]
-                }
-            );
 
-                const the_summaries =  summary_query.docs.map(doc => doc.recomm_text);
 
         
-            const competitor_data_prompt = `
-            ONLY JSON MUST be returned and it MUST be valid
-            Do NOT add text or commentary before or after the JSON
-            If you cannot generate valid JSON: return {"competitors": []}
-            
-            Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
-            and these user entered competitors: ${competitors}
-            and the following product/service ideas entered by the SaaS startup: ${ideas}
-            and the following product portfolio entered by the startup: ${products} 
-            find and display between 3-6 SaaS company names which are potential competitors with the following rules:
-
-                Rules:
-                  1. The output must not include summaries, intros or conclusions
-                  2. The market share must be expressed as a percentage
-                  3. no text can be added between each listed product
-                  4. Markdown must not be used
-                  5. Do not create new metrics that were not specified
-                  6. do not add any text, whitespace of blank lines before each competitor or product belonging to that
-                  7. do not add any text before the list of competitors or after the list
-                  8. Categories listed must match the categories from the user's product portfolio
-                  9. Each Competitor must have exactly one unique product/service listed
-                  10. You must only return JSON, and it must be returned in this exact structure:
-
-                {
-                "competitors": [
-                {
-                    "competitor_name": "string",
-                    "market_position": "string",
-                    "source": "string",
-                "products": [
-                {
-                "product_name": "string",
-                "product_price": "string",
-                "market_share": "string",
-                "items_sold": "string",
-                "categories": ["string"]
-                }
-                ]
-            }
-
-        ]
-    }
-                RETURN ONLY THE JSON OBJECT
-                VALIDATE YOUR JSON BEFORE YOU RETURN IT
-
-                  `;
-
-
-
-                
-            
-
-            const competitor_data = await call_api(competitor_data_prompt);
-            const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
-            const parsed_response =  JSON.parse(trimmed_response);
-            parsed_response.competitors = parsed_response.competitors.map(c => ({
-            competitor_name: c.competitor_name || c.competitor || "",
-            market_position: (c.market_position || c.market_pos || "").toLowerCase(),
-            source: c.source || "",
-            products: (c.products || []).map(p => ({
-                product_name: p.product_name || "",
-                product_price: p.product_price || p.price_range || "",
-                market_share: p.market_share || "",
-                items_sold: p.items_sold || "",
-                categories: p.categories || []
-                }))
-            }));
-            await the_database.insert({
-                username: username,
-                date_inserted: new Date().toISOString(),
-                competitors: parsed_response.competitors
-            })
             return response.json({
-                                competitor_data: parsed_response.competitors
-                                .map((comp, i) => `Competitor ${i+1}:
-                                Competitor Name: ${comp.competitor_name}
-                                Market Position: ${comp.market_position}
-                                Product 1:
-                                Product Name: ${comp.products[0].product_name}
-                                Product Price: ${comp.products[0].product_price}
-                                Product Market Share: ${comp.products[0].market_share}
-                                Items Sold: ${comp.products[0].items_sold}
-                                Categories: ${comp.products[0].categories.join(", ")}`)
-                                .join("\n\n")
-                                });
+
+                competitor_data: "Competitor data not yet generated"
+             });
+                       
+                     
         }
         catch(err)
         {
@@ -586,7 +489,7 @@ RULES:
         let user = request.session.username;
         console.log("RAW SESSION USER:", user);
 
-        user = user.trim().toLowerCase();
+        user = user.trim();
         console.log("SESSION USER:", JSON.stringify(user));
          const ideas_query = await the_database.find({
           selector:
@@ -632,43 +535,24 @@ RULES:
           {
                  username : user
                  
-          },
-          fields:
-          [
-                "competitors",
-                "username"
-          ]
+          }
         });
         const ideas_document = ideas_query.docs.find(d => d.ideas);
         const products_document = product_query.docs.find(d => d.products);
-        const competitors_document = competitors_query.docs.find(d=>Array.isArray(d.competitors) && d.competitors.length > 0);
+        const competitors_document = competitors_query.docs.find(d=>Array.isArray(d.user_entered_competitors));
         console.log("COMPETITORS DOCUMENT:", JSON.stringify(competitors_document, null, 2));
         console.log("IDEAS QUERY RAW:", ideas_query); 
         console.log("PRODUCT QUERY RAW:", product_query);
         // MIGRATION: Normalize old competitor schema to new schema
-        if (competitors_document) {
-            competitors_document.competitors = competitors_document.competitors.map(c => ({
-                competitor_name: c.competitor_name || c.competitor || "",
-                market_position: c.market_position || c.market_pos || "",
-                source: c.source || "",
-                products: (c.products || []).map(p => ({
-                    product_name: p.product_name || "",
-                    target_audience: p.target_audience || "",
-                    categories: p.categories || [],
-                    price_range: p.price_range || p.product_price || "",
-                    market_share: p.market_share || "",
-                    items_sold: p.items_sold || ""
-                }))
-            }));
-        }
+        
 
-        let compList = competitors_document?.competitors || [];
+        let compList = competitors_document?.user_entered_competitors || [];
 
 
         return response.json({username: personal_details_query.docs[0]?.username || "",
             password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
             products : products_document?.products || [],
-            competitors : compList})
+            user_entered_competitors : compList})
     }
     catch
     {
@@ -722,11 +606,25 @@ app.post("/update_profile",async (request,response) =>{
                     "username"
             ]
             });
+            const summary_query = await the_database.find(
+                {
+                    selector:
+                    {
+                        username: user,
+                        recomm_text: {"$exists":true}
+                    },
+                    fields:
+                    [
+                        "recomm_text"
+                    ]
+                }
+            )
            
 
         let ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
         let products_document = product_query.docs.find(d => d.products !== undefined);
         let competitors_document = competitor_query.docs[0];
+        const the_summaries = [summary_query.docs[0].recomm_text];
 
         if (!ideas_document) 
             { ideas_document = 
@@ -751,6 +649,7 @@ app.post("/update_profile",async (request,response) =>{
         const new_products =  request.body.products;
         const new_competitors = request.body.competitors
 
+
         if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length)
         {
             changed = true;
@@ -761,21 +660,28 @@ app.post("/update_profile",async (request,response) =>{
 
         if(JSON.stringify(old_competitors) !== JSON.stringify(new_competitors))
         {
-           const generated_response = await generate_competitor_data(user,new_products,new_ideas,new_competitors )
-            await the_database.insert({
-                username: username,
-                date_inserted: new Date().toISOString(),
-                competitors: generated_response.competitors
+
+                competitors_document.user_entered_competitors = new_competitors;
+                await the_database.insert(competitors_document);
+                setImmediate( () => {
+            const generated_response = generate_competitor_data(user,new_products,new_ideas,new_competitors,the_summaries );
+            generated_response.then(async(generated_response) => {
+                competitors_document.ai_generated_competitors = generated_response.competitors;
+                await the_database.insert(competitors_document);
+            }).catch(error =>{
+                console.error(error);
             })
+            });
+        }
+        else{
+        competitors_document.competitors = new_competitors;
         }
 
 
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
-        competitors_document.competitors = new_competitors;
         await the_database.insert(ideas_document);
         await the_database.insert(products_document);
-        await the_database.insert(competitors_document);
 
         return response.json({success:true});
 
@@ -804,35 +710,16 @@ app.post("/update_profile",async (request,response) =>{
 
             return parsed_response;
         }
-        async function generate_competitor_data(username,products,ideas,competitors){
+        async function generate_competitor_data(username,products,ideas,competitors,the_summaries){
             try{
                 const the_products = JSON.stringify(products);
                 const the_ideas = JSON.stringify(ideas);
 
                 const competitor_data_prompt = `
-                    ONLY JSON MUST be returned and it MUST be valid
-                    Do NOT add text or commentary before or after the JSON
-                    If you cannot generate valid JSON: return {"competitors": []}
-                    
-                    Based on the following product/service recommendations for this SaaS startup: ${the_summaries.join("\n")} 
-                    and these user entered competitors: ${competitors}
-                    and the following product/service ideas entered by the SaaS startup: ${ideas}
-                    and the following product portfolio entered by the startup: ${products} 
-                    find and display between 3-6 SaaS company names which are potential competitors with the following rules:
 
-                        Rules:
-                        1. The output must not include summaries, intros or conclusions
-                        2. The market share must be expressed as a percentage
-                        3. no text can be added between each listed product
-                        4. Markdown must not be used
-                        5. Do not create new metrics that were not specified
-                        6. do not add any text, whitespace of blank lines before each competitor or product belonging to that
-                        7. do not add any text before the list of competitors or after the list
-                        8. Categories listed must match the categories from the user's product portfolio
-                        9. Each Competitor must have exactly one unique product/service listed
-                        10. You must only return JSON, and it must be returned in this exact structure:
-
-                        {
+            return only valid JSON in this specified structure:
+                   
+                {
                         "competitors": [
                         {
                             "competitor_name": "string",
@@ -851,8 +738,22 @@ app.post("/update_profile",async (request,response) =>{
 
                     ]
                 }
-                        RETURN ONLY THE JSON OBJECT
-                        VALIDATE YOUR JSON BEFORE YOU RETURN IT
+                    
+                    Based on the following information:
+                     LLM recommendation summary:  ${the_summaries.join("\n")} 
+                     user entered competitors: ${competitors}
+                     user ideas:  ${ideas}
+                     User products: ${products} 
+
+                        Rules:
+                        1. The competitors generated MUST be real and MUST be SaaS companies
+                        2. The output must not include summaries, intros or conclusions
+                        3. return 3-5 competitors
+                        4. return exactly ONE SaaS product for each competitor
+                        5. The market share must be expressed as a percentage
+                        6. do not add any text, whitespace of blank lines outside of the JSON
+                        7. Categories listed must match the categories the user has selected in the product section
+                        
 
                         `;
                 const competitor_data =  await call_api(competitor_data_prompt);
@@ -861,8 +762,12 @@ app.post("/update_profile",async (request,response) =>{
 
 
 
+            }catch(err){
+                console.log("error generating competitor data",err);
+                throw err;
             }
         }
+        
         async function generate_new_recommendation(username,products,ideas){
              try {
 
