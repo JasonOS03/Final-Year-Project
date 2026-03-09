@@ -290,3 +290,57 @@ async function update_profile()
 // call the update profile method
 update_profile();
 });
+document.addEventListener("DOMContentLoaded",()=>{
+let prod_count = 1;
+const add_competitor_product = document.querySelector(".add_product");
+const add_competitor = document.getElementById("add_competitor");
+    function add_product(){
+    const compBlock = this.closest(".individual-competitor");
+    const competitor_product = compBlock.querySelector(".individual-product");
+    const duplicate = competitor_product.cloneNode(true);  
+
+    duplicate.querySelector(".competitor-product-header").textContent = "Product  " + ++prod_count
+
+    duplicate.querySelectorAll("input").forEach(input => {
+        if(input.type === "text")
+        {
+            input.value = "";
+        }
+        else if(input.type === "checkbox")
+        {
+            input.checked = false;
+        }
+    });
+
+    const parent = competitor_product.parentNode;
+    parent.appendChild(duplicate);
+}
+
+add_competitor_product.addEventListener("click",add_product);
+
+
+let comp_count = 1;
+add_competitor.addEventListener("click",()=>{
+    const compBlock = document.querySelector("#competitor_div .individual-competitor");
+     const duplicate = compBlock.cloneNode(true);
+     
+    duplicate.querySelector(".competitor-header").textContent = "Competitor  " + ++comp_count
+
+    duplicate.querySelectorAll("input").forEach(input => {
+        if(input.type === "text")
+        {
+            input.value = "";
+        }
+        else if(input.type === "checkbox")
+        {
+            input.checked = false;
+        }
+    });
+     duplicate.querySelector(".add_product").addEventListener("click",add_product);
+
+    const competitor_div = document.getElementById("competitor_div")
+    competitor_div.appendChild(duplicate);
+
+     
+});
+});
