@@ -691,6 +691,50 @@ app.post("/update_profile",async (request,response) =>{
         return response.status(500).json({error:err.message});
     } 
     });
+    app.post("/retrieve_accordion_data",async (request,response)=>{
+
+        const product = request.body.competitor_product
+        const username =  request.session.username
+        const insights_query = await the_database.find({
+            selector:
+            {
+                username,
+                product: product,
+                insights: {"$exists":true}
+            },
+            fields:
+            [
+                "insights"
+            ]
+        }
+        );
+        if(insights_query.docs.length >= 1)
+        {
+            return response.json({insights_data: insights_query.docs[0].insights})
+        }
+
+        insights_prompt =  `
+        Based on the following SaaS product information:
+        ${product}
+        
+        Generate short paragraphs detailing the strengths and weaknesses of this product. Your output must be in the following format:
+        Strengths: <text>
+        Weaknesses: <text>
+        Sources: <links>
+
+        Rules:
+        - Do NOT add any text before or after the paragraphs.
+        - Do NOT use markdown formatting.
+        - Do NOT add summaries, intros, or conclusions.
+        - Do NOT change the heading names.
+        - Do NOT add blank lines anywhere.
+        `;
+         const insights_data = await call_api(insights_prompt);
+         const response_data = insights_data.response
+         await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data});
+         response.json({insights_data: response_data});
+
+    });
         async function parse_competitor_data(competitor_data)
         {
             const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";

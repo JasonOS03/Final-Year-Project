@@ -280,7 +280,9 @@ function create_modal()
 
         const modal_body = document.createElement("div");
         modal_body.classList.add("modal-body");
+        
         content_div.appendChild(modal_body);
+
         document.body.appendChild(modal_div);
 
 
@@ -318,6 +320,114 @@ function create_modal_table()
 
     return{ table,product_table };
 }
+function create_modal_accordion()
+{
+    const accordion_div = document.createElement("div");
+
+    accordion_div.classList.add("accordion","bg-warning");
+    accordion_div.id = "comp-accordion";
+
+
+    const accordion_item = document.createElement("div");
+    accordion_item.classList.add("accordion-item");
+
+    const accordion_header =  document.createElement("h2");
+    accordion_header.classList.add("accordion-header");
+
+    accordion_item.appendChild(accordion_header);
+    accordion_div.appendChild(accordion_item);
+
+    const item_button = document.createElement("button");
+    item_button.textContent = "View Product Insights";
+    item_button.type = "button";
+    item_button.setAttribute("data-bs-toggle","collapse");
+    item_button.setAttribute("data-bs-target","#collapse_accord")
+    item_button.classList.add("accordion-button","collapsed");
+    accordion_header.appendChild(item_button);
+
+    const collapse_accordion =  document.createElement("div");
+    collapse_accordion.classList.add("accordion-collapse","collapse");
+    collapse_accordion.id = "collapse_accord";
+    collapse_accordion.setAttribute("data-bs-parent","#comp-accordion");
+
+    const accordion_body = document.createElement("div");
+    accordion_body.classList.add("accordion-body");
+    accordion_body.id = "insights_body";
+
+
+    collapse_accordion.appendChild(accordion_body);
+    accordion_item.appendChild(collapse_accordion);
+    
+    return accordion_div;
+
+}
+async function populate_modal_accordion(competitor_data_retrieval)
+{
+    const accordion_body = document.getElementById("insights_body");
+    const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
+    const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0);
+
+    for( const competitor of comps){
+        const products = competitor.split(/product\s*\d*:/).slice(1);
+
+            for( const product of products){
+                trimmed_product = product.trim();
+                if(!trimmed_product)
+                {
+                    continue;
+                }
+                const item_section = document.createElement("div");
+                item_section.classList.add("product-section","rounded","p-2");
+              
+                accordion_body.appendChild(item_section);
+                 const insights = await retrieve_accordion_data(product);
+                const strengths = insights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const weaknesses = insights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                const sources = insights.match(/Sources[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+
+                item_section.innerHTML = `
+                <label>Strengths: </label>
+                <p3>${strengths}</p3>
+                <br><br>
+                <label>Weaknesses: </label>
+                <p3>${weaknesses}</p3>
+                <br><br>
+                <p3>${sources}</p3>
+                `;
+
+            }
+    }
+
+}
+async function retrieve_accordion_data(competitor_product)
+{
+    try{
+        const insights = await fetch("/retrieve_accordion_data",
+            {
+                method: "POST",
+                headers:
+                {
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify
+                (
+                {
+                    competitor_product: competitor_product
+                }
+                )
+            }
+        )
+            const insights_response =  await insights.json();
+            console.log("Insights response",insights_response);
+            return insights_response.insights_data;
+    }
+    catch(err)
+    {
+        console.error("failed to retrieve competitor product insights",err);
+        return null;
+    }
+}
+
 async function get_competitor_data(products,ideas,competitors)
 {
     try{
@@ -412,6 +522,11 @@ function handle_click(products,ideas,competitors)
                 modal_body.innerHTML = ""; 
                 modal_body.appendChild(table); 
                 modal_body.appendChild(product_table);
+
+                 const accord = create_modal_accordion();
+                 modal_body.appendChild(accord);
+
+                 populate_modal_accordion(competitor_data_retrieval);
 
                 const modal = document.getElementById("competitor_modal"); 
                 const the_modal = new bootstrap.Modal(modal);
