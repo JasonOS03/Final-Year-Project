@@ -290,7 +290,9 @@ function create_modal()
 function create_modal_table()
 {
     const table =  document.createElement("table");
+    table.classList.add("table","w-100","mb-4");
     const product_table = document.createElement("table");
+    product_table.classList.add("table","w-100","mb-4");
     const table_row1 =  document.createElement("tr");
     const product_table_row = document.createElement("tr");
     const company_name =  document.createElement("th");
@@ -327,45 +329,27 @@ function create_modal_accordion()
     accordion_div.classList.add("accordion","bg-warning");
     accordion_div.id = "comp-accordion";
 
+    const inner_accordion =  document.createElement("div");
+    inner_accordion.id = "inner"
+    inner_accordion.classList.add("accordion");
+    accordion_div.appendChild(inner_accordion);
 
-    const accordion_item = document.createElement("div");
-    accordion_item.classList.add("accordion-item");
-
-    const accordion_header =  document.createElement("h2");
-    accordion_header.classList.add("accordion-header");
-
-    accordion_item.appendChild(accordion_header);
-    accordion_div.appendChild(accordion_item);
-
-    const item_button = document.createElement("button");
-    item_button.textContent = "View Product Insights";
-    item_button.type = "button";
-    item_button.setAttribute("data-bs-toggle","collapse");
-    item_button.setAttribute("data-bs-target","#collapse_accord")
-    item_button.classList.add("accordion-button","collapsed");
-    accordion_header.appendChild(item_button);
-
-    const collapse_accordion =  document.createElement("div");
-    collapse_accordion.classList.add("accordion-collapse","collapse");
-    collapse_accordion.id = "collapse_accord";
-    collapse_accordion.setAttribute("data-bs-parent","#comp-accordion");
-
-    const accordion_body = document.createElement("div");
-    accordion_body.classList.add("accordion-body");
-    accordion_body.id = "insights_body";
-
-
-    collapse_accordion.appendChild(accordion_body);
-    accordion_item.appendChild(collapse_accordion);
     
     return accordion_div;
 
 }
 async function populate_modal_accordion(competitor_data_retrieval)
 {
-    const accordion_body = document.getElementById("insights_body");
+    const inner = document.getElementById("inner");
+    const header = document.createElement("h3");
+    header.textContent = "Product Insights";
+    header.classList.add("text-black","text-center","mb-4","mt-4");
+    header.id = "accordion_insights_header";
+    inner.appendChild(header);
     const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
     const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0);
+    let i = 1;
+    let product_list = [];
 
     for( const competitor of comps){
         const products = competitor.split(/product\s*\d*:/).slice(1);
@@ -376,29 +360,62 @@ async function populate_modal_accordion(competitor_data_retrieval)
                 {
                     continue;
                 }
-                const item_section = document.createElement("div");
-                item_section.classList.add("product-section","rounded","p-2");
-              
-                accordion_body.appendChild(item_section);
-                 const insights = await retrieve_accordion_data(product);
-                const strengths = insights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const weaknesses = insights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                const sources = insights.match(/Sources[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                product_list.push(trimmed_product);
+            }
+        }
 
-                item_section.innerHTML = `
-                <label>Strengths: </label>
-                <p3>${strengths}</p3>
-                <br><br>
-                <label>Weaknesses: </label>
-                <p3>${weaknesses}</p3>
-                <br><br>
-                <p3>${sources}</p3>
-                `;
+                const results = await Promise.all(product_list.map(product => retrieve_accordion_data(product)));
+                let ind;
 
+                for(ind = 0;ind < product_list.length;ind++){
+                    const trimmed_product = product_list[ind];
+                    const product_insights = results[ind];
+                    const accordion_item = document.createElement("div");
+                    accordion_item.classList.add("accordion-item");
+
+                    const accordion_header =  document.createElement("h2");
+                    accordion_header.classList.add("accordion-header");
+
+                    accordion_item.appendChild(accordion_header);
+
+                    const item_button = document.createElement("button");
+                    item_button.type = "button";
+                    item_button.setAttribute("data-bs-toggle","collapse");
+                    item_button.setAttribute("data-bs-target",`#collapse_accord_${i}`);
+                    item_button.classList.add("accordion-button","collapsed");
+                    item_button.textContent = `Product ${i}`;
+                    accordion_header.appendChild(item_button);
+
+                    const collapse_accordion =  document.createElement("div");
+                    collapse_accordion.classList.add("accordion-collapse","collapse");
+                    collapse_accordion.id = `collapse_accord_${i}`;
+                    collapse_accordion.setAttribute("data-bs-parent","#inner");
+
+                    const accordion_body = document.createElement("div");
+                    accordion_body.classList.add("accordion-body");
+                
+                    collapse_accordion.appendChild(accordion_body);
+                    accordion_item.appendChild(collapse_accordion);
+                
+                    inner.appendChild(accordion_item);
+                    
+                    const strengths = product_insights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                    const weaknesses = product_insights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                    const sources = product_insights.match(/Sources[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+
+                    accordion_body.innerHTML = `
+                    <label>Strengths: </label>
+                    <p3>${strengths}</p3>
+                    <br><br>
+                    <label>Weaknesses: </label>
+                    <p3>${weaknesses}</p3>
+                    <br><br>
+                    <p3>${sources}</p3>
+                    `;
+                    i++;
             }
     }
 
-}
 async function retrieve_accordion_data(competitor_product)
 {
     try{

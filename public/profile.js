@@ -344,3 +344,4 @@ add_competitor.addEventListener("click",()=>{
      
 });
 });
+
