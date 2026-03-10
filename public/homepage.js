@@ -79,6 +79,8 @@ try{
         expand(container,response,button);
     })
 
+    handle_filter_input();
+
 
 
     });
@@ -549,4 +551,44 @@ function handle_click(products,ideas,competitors)
                 const the_modal = new bootstrap.Modal(modal);
                 the_modal.show();
     }
+}
+function handle_filter_input()
+{
+    const the_items = document.querySelectorAll(".carousel-item");
+    const input = document.getElementById("filter");
+    const indicators = document.querySelectorAll(".carousel-indicators li")
+    input.addEventListener("input",()=>{
+        let first_container = null;
+        the_items.forEach((rec,i)=>{
+            const response = rec.querySelector("#response");
+            const response_text = response.textContent.toLowerCase();
+            const lowercase_input = input.value.toLowerCase();
+            if(response_text.includes(lowercase_input))
+            {
+                rec.style.display = "";
+                indicators[i].style.display = "";
+                if(!first_container)
+                {
+                    first_container = rec;
+                }
+            }
+            else
+            {
+                rec.style.display = "none";
+                indicators[i].style.display = "none";
+            }
+        })
+        const active_item = document.querySelector(".carousel-item.active")
+        if(active_item && active_item.style.display == "none")
+        {
+            active_item.classList.remove("active");
+        }
+        if(first_container)
+        {
+            if(active_item){
+            active_item.classList.remove("active");
+            }
+            first_container.classList.add("active");
+        }
+    })
 }
