@@ -174,7 +174,10 @@ try{
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
+            const rate_recommendations_button = create_ratings_button();
+            handle_ratings_button();
             container.appendChild(x_button);
+            container.appendChild(rate_recommendations_button);
 
             x_button.addEventListener("click",()=>{
                 collapse(container,response,container_height,container_width,button);
@@ -230,6 +233,7 @@ try{
             }
 
             x_button.remove();
+            rate_recommendations_button.remove()
             }
 
     }
@@ -590,5 +594,44 @@ function handle_filter_input()
             }
             first_container.classList.add("active");
         }
+    })
+}
+function create_ratings_button()
+{
+        const rate_recommendations_button = document.createElement("button");
+        rate_recommendations_button.classList.add("bg-warning","text-black", "p-1", "rounded", "mb-2","Ratings","mx-auto","d-block");
+        rate_recommendations_button.textContent = "Rate Recommendations";
+        return  rate_recommendations_button
+}
+function handle_ratings_button()
+{
+    const ratings_button = document.querySelector(".Ratings");
+    ratings_button.addEventListener("click",()=>{
+        const modal = create_modal();
+        modal.title.textContent = "Rate Recommendation";
+        const modal_body = modal.modal_body;
+        const ratings_div = document.createElement("div");
+
+        const ratings_label = document.createElement("label");
+        ratings_label.classList.add("form-label");
+        modal_body.appendChild("ratings_label");
+
+        const ratings_input = document.createElement("input");
+        ratings_input.classList.add("rating");
+        ratings_input.id = `input-rating`;
+        ratings_input.setAttribute("data-theme","krajee-fas");
+        ratings_input.setAttribute("data-min","0");
+        ratings_input.setAttribute("data-max","5");
+        ratings_input.setAttribute("data-step","1");
+        modal_body.appendChild(ratings_input);
+
+        const the_modal = new bootstrap.Modal(modal);
+        the_modal.show();
+
+
+
+        $("#input-rating").rating({theme: "krajee-fas",showCaption: "false",showClear:"false"});
+
+
     })
 }
