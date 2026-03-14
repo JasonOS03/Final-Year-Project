@@ -611,11 +611,38 @@ function handle_ratings_button()
         modal.title.textContent = "Rate Recommendation";
         const modal_body = modal.modal_body;
         const ratings_div = document.createElement("div");
+        modal_body.appendChild(ratings_div);
 
         const ratings_label = document.createElement("label");
         ratings_label.classList.add("form-label");
-        modal_body.appendChild("ratings_label");
+        ratings_div.appendChild("ratings_label");
 
+        create_ratings()
+        const ratings_input = create_ratings().ratings_input
+        ratings_div.appendChild(ratings_input);
+
+
+        const feedback_label = document.createElement("label");
+        feedback_label.classList.add("form-label");
+        feedback_label.textContent =  "Additional Feedback";
+        const feedback_box = document.createElement("textarea");
+        feedback_box.classList.add("form-control");
+        feedback_box.setAttribute("aria-label","Feedback input box");
+        
+
+
+        const the_modal = new bootstrap.Modal(modal);
+        the_modal.show();
+
+
+
+        const star_rating = $("#input-rating").rating({theme: "krajee-fas",showCaption: "false",showClear:"false"});
+
+
+    })
+}
+function create_ratings()
+{
         const ratings_input = document.createElement("input");
         ratings_input.classList.add("rating");
         ratings_input.id = `input-rating`;
@@ -623,15 +650,33 @@ function handle_ratings_button()
         ratings_input.setAttribute("data-min","0");
         ratings_input.setAttribute("data-max","5");
         ratings_input.setAttribute("data-step","1");
-        modal_body.appendChild(ratings_input);
+        return ratings_input
+}
+ async function submit_ratings(recommendation_id,rating,feedback_text)
+{
+    try{
+        const feedback = await fetch("post_feedback",{
+            method: "POST",
+            headers:
+            {
+                "Content-Type":"application/json"
+            },
+            body:
+            [
+            {
+                recommendation_id:recommendation_id,
+                star_rating:rating,
+                feedback:feedback_text
+            }
+            ]
 
-        const the_modal = new bootstrap.Modal(modal);
-        the_modal.show();
-
-
-
-        $("#input-rating").rating({theme: "krajee-fas",showCaption: "false",showClear:"false"});
-
-
-    })
+        })
+        const res =  await feedback.json();
+        console.log("Feedback data posted successfully: ",res);
+        modal_body.innerHTML = "Feedback successfully submitted";
+    }
+    catch(err)
+    {
+        console.error("failed to send the ratings to the database",err);
+    }
 }
