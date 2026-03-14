@@ -720,10 +720,12 @@ app.post("/update_profile",async (request,response) =>{
         Generate short paragraphs detailing the strengths and weaknesses of this product. Your output must be in the following format:
         Strengths: <text>
         Weaknesses: <text>
-        Sources: <links>
+        Sources: https://example1.com https://example2.com
 
         Rules:
-        - Do NOT add any text before or after the paragraphs.
+        - Sources MUST be on the same line as the "Sources:" header
+        - You MUST replace the examples with reputable, real sources.
+        - Do NOT add any text before or after the paragraphs or lines.
         - Do NOT use markdown formatting.
         - Do NOT add summaries, intros, or conclusions.
         - Do NOT change the heading names.
@@ -812,8 +814,8 @@ app.post("/update_profile",async (request,response) =>{
                         5. The market share must be expressed as a percentage
                         6. do not add any text, whitespace of blank lines outside of the JSON
                         7. Categories listed must match the categories the user has selected in the product section
+                        8. source must be a single link to where you found some of this information
                         
-
                         `;
                 const competitor_data =  await call_api(competitor_data_prompt);
                return await parse_competitor_data(competitor_data);

@@ -411,7 +411,10 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     
                     const strengths = product_insights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
                     const weaknesses = product_insights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-                    const sources = product_insights.match(/Sources[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                    const sources = product_insights.match(/Sources[:\-–]\s*([\s\S]*?)(?=\n[A-Z][a-z]+[:\-–]|$)/i)?.[1].trim() || "";
+                    const urls = sources.match(/https?:\/\/[^\s]+/g) || [];
+                    const clickable_sources = urls.length ? urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : "No sources provided";
+
 
                     accordion_body.innerHTML = `
                     <label>Strengths: </label>
@@ -420,7 +423,8 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     <label>Weaknesses: </label>
                     <p3>${weaknesses}</p3>
                     <br><br>
-                    <p3>${sources}</p3>
+                    <label>Sources:</label>
+                    <p3>${clickable_sources}</p3>
                     `;
                     i++;
             }
