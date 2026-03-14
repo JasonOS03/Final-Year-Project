@@ -735,6 +735,21 @@ app.post("/update_profile",async (request,response) =>{
          response.json({insights_data: response_data});
 
     });
+    app.post("/post_feedback",async (request,response)=>{
+        try{
+            const rec_id = request.body.recommendation_id;
+            const rating = request.body.star_rating;
+            const text = request.body.feedback;
+
+            await the_database.insert({rec_id:rec_id,star_rating:rating,feedback_text:text});
+            return response.json({message: "successfully submitted recommendation rating"});
+        }
+        catch(err)
+        {
+            console.error("Failed to send feedback to the backend",err);
+            return response.status(500).json({error:"Failed to send feedback to the backend"});
+        }
+    })
         async function parse_competitor_data(competitor_data)
         {
             const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";

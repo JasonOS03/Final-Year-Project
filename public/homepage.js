@@ -175,9 +175,11 @@ try{
             <p id = "risk_level"></p>`;
 
             const rate_recommendations_button = create_ratings_button();
-            handle_ratings_button();
             container.appendChild(x_button);
             container.appendChild(rate_recommendations_button);
+
+            const recommendation_id = Number(response.dataset.id);
+            handle_ratings_button(recommendation_id);
 
             x_button.addEventListener("click",()=>{
                 collapse(container,response,container_height,container_width,button);
@@ -290,6 +292,8 @@ function create_modal()
         content_div.appendChild(modal_body);
 
         document.body.appendChild(modal_div);
+
+        return{modal_body:modal_body,modal:modal_div,title:title};
 
 
 }
@@ -603,7 +607,7 @@ function create_ratings_button()
         rate_recommendations_button.textContent = "Rate Recommendations";
         return  rate_recommendations_button
 }
-function handle_ratings_button()
+function handle_ratings_button(rec_id)
 {
     const ratings_button = document.querySelector(".Ratings");
     ratings_button.addEventListener("click",()=>{
@@ -613,30 +617,50 @@ function handle_ratings_button()
         const ratings_div = document.createElement("div");
         modal_body.appendChild(ratings_div);
 
+        const ratings_input = create_ratings()
+
         const ratings_label = document.createElement("label");
         ratings_label.classList.add("form-label");
-        ratings_div.appendChild("ratings_label");
-
-        create_ratings()
-        const ratings_input = create_ratings().ratings_input
+        ratings_label.textContent = "Your Star Rating";
+        ratings_div.appendChild(ratings_label);
         ratings_div.appendChild(ratings_input);
+
 
 
         const feedback_label = document.createElement("label");
         feedback_label.classList.add("form-label");
         feedback_label.textContent =  "Additional Feedback";
+        ratings_div.appendChild(feedback_label);
         const feedback_box = document.createElement("textarea");
         feedback_box.classList.add("form-control");
         feedback_box.setAttribute("aria-label","Feedback input box");
+        ratings_div.appendChild(feedback_box);
         
 
 
-        const the_modal = new bootstrap.Modal(modal);
+        const the_modal = new bootstrap.Modal(modal.modal);
         the_modal.show();
 
 
 
-        const star_rating = $("#input-rating").rating({theme: "krajee-fas",showCaption: "false",showClear:"false"});
+        $(modal.modal).on("shown.bs.modal",()=>{$("#input-rating").rating({theme: "krajee-fas",showCaption: "false",showClear:"false"})});
+
+        const submit_ratings_button = document.createElement("button");
+        submit_ratings_button.classList.add("bg-warning","text-black", "p-1", "rounded", "mb-2","submit-rating","mx-auto","d-block");
+        submit_ratings_button.textContent = "Submit Rating";
+        modal_body.appendChild(submit_ratings_button);
+        submit_ratings_button.addEventListener("click",()=>{
+            const feedback_text =  feedback_box.value;
+            const star_rating = document.getElementById("input-rating").value;
+            if(!star_rating || !feedback_text)
+            {
+                const error_sentence = document.createElement("p");
+                error_sentence.textContent = "Please enter a star rating or feedback";
+                modal_body.appendChild(error_sentence);
+                return;
+            }
+            submit_ratings(rec_id,star_rating,feedback_text,modal_body);
+        })
 
 
     })
@@ -652,28 +676,35 @@ function create_ratings()
         ratings_input.setAttribute("data-step","1");
         return ratings_input
 }
- async function submit_ratings(recommendation_id,rating,feedback_text)
+let submitted = {};
+ async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
 {
+    if(submitted[recommendation_id])
+    {
+        modal_body.innerHTML = "Rating already submitted for this recommendation"
+        return;
+    }
     try{
-        const feedback = await fetch("post_feedback",{
+        const feedback = await fetch("/post_feedback",{
             method: "POST",
             headers:
             {
                 "Content-Type":"application/json"
             },
-            body:
-            [
+            body: JSON.stringify
+            (
             {
                 recommendation_id:recommendation_id,
                 star_rating:rating,
                 feedback:feedback_text
             }
-            ]
+            )
 
         })
         const res =  await feedback.json();
         console.log("Feedback data posted successfully: ",res);
         modal_body.innerHTML = "Feedback successfully submitted";
+        submitted[recommendation_id] = true;
     }
     catch(err)
     {
