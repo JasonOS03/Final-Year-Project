@@ -12,6 +12,16 @@ const view_buttons = document.querySelectorAll(".view_full_recomm");
 
 document.addEventListener("DOMContentLoaded", async ()=>{
 try{
+
+    const get_submitted_feedback = await fetch("/retrieve_feedback_status");
+    const feedback_data = await get_submitted_feedback.json();
+
+    submitted = {};
+    feedback_data.submitted_response.forEach(feedback_id =>{
+        submitted[feedback_id] = true;
+    })
+
+
     const retrieve_data = await fetch("/retrieve_details",{
         method:"GET",
         headers:
@@ -87,6 +97,7 @@ try{
 
 
         async function expand(container,response,button){
+        let rate_recommendations_button;
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
 
@@ -174,7 +185,7 @@ try{
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
-            const rate_recommendations_button = create_ratings_button();
+            rate_recommendations_button = create_ratings_button();
             container.appendChild(x_button);
             container.appendChild(rate_recommendations_button);
 
@@ -408,11 +419,22 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     accordion_item.appendChild(collapse_accordion);
                 
                     inner.appendChild(accordion_item);
-                    
+
+                    // extract the strengths from the data returned by the backend
+                    // The match() function searches for the strengths text followed by a dash or a colon
+                    // Everything up to a newline is captured
+                    // undefined is returned if there is no match
                     const strengths = product_insights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                    // extract the weaknesses
                     const weaknesses = product_insights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+                    // extract the source links provided
+                    // everything including newlines are captured
+                    // stops at the heading of the next section
                     const sources = product_insights.match(/Sources[:\-–]\s*([\s\S]*?)(?=\n[A-Z][a-z]+[:\-–]|$)/i)?.[1].trim() || "";
+                    // extract the URL's and match the data with the https:// or http:// substring
                     const urls = sources.match(/https?:\/\/[^\s]+/g) || [];
+                    // create clickable links for the urls. The map function creates a new array of href links joined by a breakpoint
+                    // fallback message shown if no sources were provided
                     const clickable_sources = urls.length ? urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : "No sources provided";
 
 
@@ -615,6 +637,15 @@ function handle_ratings_button(rec_id)
 {
     const ratings_button = document.querySelector(".Ratings");
     ratings_button.addEventListener("click",()=>{
+
+        if(submitted[rec_id])
+        {
+            const modal = create_modal()
+            modal.modal_body.innerHTML = "Rating already submitted for this recommendation"
+            const the_modal = new bootstrap.modal(modal.modal);
+            the_modal.show()
+            return;
+        }
         const modal = create_modal();
         modal.title.textContent = "Rate Recommendation";
         const modal_body = modal.modal_body;
@@ -656,7 +687,7 @@ function handle_ratings_button(rec_id)
         submit_ratings_button.addEventListener("click",()=>{
             const feedback_text =  feedback_box.value;
             const star_rating = document.getElementById("input-rating").value;
-            if(!star_rating || !feedback_text)
+            if(!star_rating && !feedback_text)
             {
                 const error_sentence = document.createElement("p");
                 error_sentence.textContent = "Please enter a star rating or feedback";
@@ -680,14 +711,9 @@ function create_ratings()
         ratings_input.setAttribute("data-step","1");
         return ratings_input
 }
-let submitted = {};
- async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
+
+async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
 {
-    if(submitted[recommendation_id])
-    {
-        modal_body.innerHTML = "Rating already submitted for this recommendation"
-        return;
-    }
     try{
         const feedback = await fetch("/post_feedback",{
             method: "POST",

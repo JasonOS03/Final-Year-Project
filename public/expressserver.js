@@ -717,7 +717,7 @@ app.post("/update_profile",async (request,response) =>{
         Based on the following SaaS product information:
         ${product}
         
-        Generate short paragraphs detailing the strengths and weaknesses of this product. Your output must be in the following format:
+        Generate short paragraphs detailing the strengths and weaknesses of this SaaS product/service. Your output must be in the following format:
         Strengths: <text>
         Weaknesses: <text>
         Sources: https://example1.com https://example2.com
@@ -742,8 +742,27 @@ app.post("/update_profile",async (request,response) =>{
             const rec_id = request.body.recommendation_id;
             const rating = request.body.star_rating;
             const text = request.body.feedback;
+            const username = request.session.username
 
-            await the_database.insert({rec_id:rec_id,star_rating:rating,feedback_text:text});
+            const check_feedback = await the_database.find(
+            {selector:
+                {
+                    rec_id:{"$exists":true},
+                    username
+                },
+                fields:
+                [
+                    "rec_id"
+                ]
+
+            }
+        )
+            if(check_feedback.docs.length >= 1)
+            {
+                return response.json({previously_submitted:true});
+            }
+
+            await the_database.insert({username:username,rec_id:rec_id,star_rating:rating,feedback_text:text});
             return response.json({message: "successfully submitted recommendation rating"});
         }
         catch(err)
@@ -751,6 +770,32 @@ app.post("/update_profile",async (request,response) =>{
             console.error("Failed to send feedback to the backend",err);
             return response.status(500).json({error:"Failed to send feedback to the backend"});
         }
+    })
+    app.get("/retrieve_feedback_status",async(request,response)=>{
+        const username = request.session.username
+        try{
+        const submitted = await the_database.find(
+            {selector:
+                {
+                    rec_id:{"$exists":true},
+                    username
+                },
+                fields:
+                [
+                    "rec_id"
+                ]
+
+            }
+        
+        )
+        const ids = submitted.docs.map(doc => doc.rec_id);
+        return response.json({submitted_response:ids});
+    }
+    catch(err)
+    {
+        console.error("Failed to retrieve submission status", err);
+        return response.status(500).json({error:"Failed to retrieve submission status"})
+    }
     })
         async function parse_competitor_data(competitor_data)
         {
