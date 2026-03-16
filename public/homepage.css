@@ -1,70 +1,185 @@
+/* GLOBAL -------------------------------------------------- */
+
 body {
-            background-color: #f8f9fa;
-        }
+    background-color: #f8f9fa;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
 
-        /* Navbar */
-        .navbar {
-            padding: 1rem 0;
-            background-color: #ffc107;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
+/* NAVBAR -------------------------------------------------- */
 
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #000 !important;
-        }
+.navbar {
+    padding: 1rem 0;
+    background-color: #ffc107;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
 
-        .nav-link {
-            font-weight: 600;
-            color: #000 !important;
-            padding: 0.75rem 1rem;
-        }
+.navbar-brand {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #000;
+}
 
-        .nav-link:hover,
-        .nav-link:focus {
-            background-color: rgba(255,255,255,0.4);
-            border-radius: 6px;
-            text-decoration: none;
-        }
+.nav-link {
+    font-weight: 600;
+    color: #000 !important;
+    padding: 0.5rem 1rem;
+}
 
-        /* Page headers */
-        .page-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-        }
+.nav-link:hover,
+.nav-link:focus {
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 6px;
+    text-decoration: none;
+}
 
-        /* Search bar container */
-        #searchnav {
-            max-width: 600px;
-            margin: 2rem auto;
-        }
+/* HEADERS -------------------------------------------------- */
 
-        /* Carousel container */
-        #carousel {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+.page-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+}
 
-        /* Recommendation card */
-        .recommendation-card {
-            background-color: #198754;
-            border-radius: 12px;
-            padding: 2rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+.lead {
+    font-size: 1.2rem;
+    color: #555;
+}
 
-        /* Carousel arrows */
-        .carousel-control-prev img,
-        .carousel-control-next img {
-            filter: drop-shadow(0 0 4px rgba(0,0,0,0.4));
-            vertical-align: middle;
-        }
+/* SEARCH BAR ---------------------------------------------- */
 
-        /* Focus states */
-        button:focus,
-        input:focus {
-            outline: 3px solid #ffc107 !important;
-            outline-offset: 2px;
-        }
+#searchnav {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+#filter {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+}
+
+/* CAROUSEL ------------------------------------------------- */
+
+#carousel {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.carousel-inner {
+    padding: 1rem 0;
+}
+
+.carousel-item {
+    transition: transform 0.6s ease-in-out;
+}
+
+/* RECOMMENDATION CARD -------------------------------------- */
+
+
+.recomm_card {
+    background-color: #198754 !important;
+    border-radius: 12px;
+    padding: 2rem !important;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: relative;
+}
+
+.view_full_recomm {
+    background-color: #ffc107 !important;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.view_full_recomm:hover {
+    background-color: #e0a800 !important;
+}
+
+/* EXPANDED VIEW -------------------------------------------- */
+
+.col-md-6.expanded {
+    outline: 4px solid black;
+    box-shadow: 0 0 10px black;
+    overflow-y: auto;
+}
+
+.col-md-6.expanded h3,
+.col-md-6.expanded h4 {
+    font-weight: 700;
+    margin-top: 1rem;
+}
+
+.col-md-6.expanded label {
+    font-weight: 600;
+}
+
+/* CLOSE BUTTON --------------------------------------------- */
+
+.col-md-6 button.close-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: #000;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.col-md-6 button.close-btn:hover {
+    background: #333;
+}
+
+/* CAROUSEL ARROWS ------------------------------------------ */
+
+.carousel-control-prev img,
+.carousel-control-next img {
+    width: 50px;
+    height: 50px;
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.4));
+}
+
+/* MODALS ---------------------------------------------------- */
+
+.modal-content {
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-body {
+    padding-top: 0;
+}
+
+/* BUTTONS --------------------------------------------------- */
+
+button {
+    transition: background-color 0.2s ease;
+}
+
+button:focus,
+input:focus {
+    outline: 3px solid #ffc107 !important;
+    outline-offset: 2px;
+}
+
+.view-competitor {
+    background-color: #ffc107 !important;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-top: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.view-competitor:hover {
+    background-color: #e0a800 !important;
+}
+

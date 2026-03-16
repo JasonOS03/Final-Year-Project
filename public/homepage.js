@@ -71,7 +71,7 @@ try{
         
 
         carousel_item.innerHTML = `<div class = "row justify-content-center">
-            <div id = "container2" class = "col-md-6 bg-success text-center rounded p-4">
+            <div class = " recomm_card col-md-6 bg-success text-center rounded p-4">
                 <p id="response" class = "text-white">${recommendation.recomm_text}</p>
                 <br><br>
                 <button class = "bg-warning text-black p-1 rounded mb-2 view_full_recomm" id = "view_full_recomm">View Full Recommendation</button>
@@ -101,18 +101,22 @@ try{
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
 
+        button.setAttribute("aria-expanded","true");
         button.style.display = "none";
 
+        // expand the container by the width and height
         container.style.width = container_width *2.7 + "px";
         container.style.height = container_height *2.7 + "px";
-        container.style.overflowY = "auto"
-        container.style.position = "relative";
+        container.style.overflowY = "auto" // creates scrolling functionality
+        container.style.position = "relative"; // relative positioning
         container.style.outline = "4px solid black";
         container.style.boxShadow = "0 0 10px black";
+        container.setAttribute("aria-live","polite"); // notify the screen-reader when the container is expanded
  
 
         const x_button = document.createElement("button")
         x_button.textContent = "X";
+        x_button.setAttribute("aria-label","Collapse the recommendation")
         x_button.style.top = 0;
         x_button.style.right = 0;
         x_button.style.position = "absolute";
@@ -232,6 +236,7 @@ try{
             container.appendChild(response);
             container.appendChild(button);
             button.style.display = "block";
+            button.setAttribute("aria-expanded","false");
             right_arrow.style.display = "block";
             left_arrow.style.display = "block";
             button.style.position = "absolute";
@@ -278,6 +283,8 @@ function create_modal()
         modal_div.tabIndex = -1;
         modal_div.id = "competitor_modal";
         modal_div.setAttribute("aria-hidden","true");
+        modal_div.setAttribute("aria-modal","true");
+        modal_div,setAttribute("role","dialog");
         const document_div = document.createElement("div");
         document_div.classList.add("modal-dialog", "modal-dialog-centered");
         document_div.setAttribute("role","document");
@@ -685,6 +692,7 @@ function handle_ratings_button(rec_id,ratings_button,container)
         modal.modal.addEventListener("hidden.bs.modal", () => {
         right_arrow.style.display = "block";
         left_arrow.style.display = "block";
+        ratings_button.focus()
 
         if (container.arguments && container._collapseFn) {
             container._collapseFn(
@@ -737,6 +745,7 @@ function create_ratings()
         ratings_input.setAttribute("data-min","0");
         ratings_input.setAttribute("data-max","5");
         ratings_input.setAttribute("data-step","1");
+        rating_input.setAttribute("aria-label","rating from 0-5 stars");
         return ratings_input
 }
 
