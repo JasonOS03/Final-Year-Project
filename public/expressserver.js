@@ -747,7 +747,7 @@ app.post("/update_profile",async (request,response) =>{
             const check_feedback = await the_database.find(
             {selector:
                 {
-                    rec_id:{"$exists":true},
+                    rec_id:rec_id,
                     username
                 },
                 fields:

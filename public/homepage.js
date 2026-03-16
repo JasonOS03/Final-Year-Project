@@ -17,8 +17,8 @@ try{
     const feedback_data = await get_submitted_feedback.json();
 
     submitted = {};
-    feedback_data.submitted_response.forEach(feedback_id =>{
-        submitted[feedback_id] = true;
+    feedback_data.submitted_response.forEach(rec_id =>{
+        submitted[rec_id] = true;
     })
 
 
@@ -185,12 +185,17 @@ try{
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
-            rate_recommendations_button = create_ratings_button();
-            container.appendChild(x_button);
-            container.appendChild(rate_recommendations_button);
-
             const recommendation_id = Number(response.dataset.id);
-            handle_ratings_button(recommendation_id);
+
+            if(!container.rate_recommendations_button){
+                container.rate_recommendations_button = create_ratings_button();
+                handle_ratings_button(recommendation_id,container.rate_recommendations_button,container);
+            }
+            container.appendChild(x_button);
+            container.appendChild(container.rate_recommendations_button);
+
+            
+            
 
             x_button.addEventListener("click",()=>{
                 collapse(container,response,container_height,container_width,button);
@@ -246,8 +251,10 @@ try{
             }
 
             x_button.remove();
-            rate_recommendations_button.remove()
+            container.rate_recommendations_button.remove()
             }
+            container.arguments = {container,response,container_height,container_width,button}
+            container._collapseFn = collapse;
 
     }
     // function call for competitor button creation
@@ -633,21 +640,22 @@ function create_ratings_button()
         rate_recommendations_button.textContent = "Rate Recommendations";
         return  rate_recommendations_button
 }
-function handle_ratings_button(rec_id)
+function handle_ratings_button(rec_id,ratings_button,container)
 {
-    const ratings_button = document.querySelector(".Ratings");
     ratings_button.addEventListener("click",()=>{
 
         if(submitted[rec_id])
         {
-            const modal = create_modal()
-            modal.modal_body.innerHTML = "Rating already submitted for this recommendation"
-            const the_modal = new bootstrap.modal(modal.modal);
-            the_modal.show()
+            const modal = create_modal();
+            modal.modal.id = "rating_modal_" + Math.random();
+            modal.modal_body.innerHTML = "Rating already submitted for this recommendation";
+            const the_modal = new bootstrap.Modal(modal.modal);
+            the_modal.show();
             return;
         }
         const modal = create_modal();
         modal.title.textContent = "Rate Recommendation";
+        modal.modal.id = "rating_modal_" + Math.random();
         const modal_body = modal.modal_body;
         const ratings_div = document.createElement("div");
         modal_body.appendChild(ratings_div);
@@ -674,6 +682,25 @@ function handle_ratings_button(rec_id)
 
 
         const the_modal = new bootstrap.Modal(modal.modal);
+        modal.modal.addEventListener("hidden.bs.modal", () => {
+        right_arrow.style.display = "block";
+        left_arrow.style.display = "block";
+
+        if (container.arguments && container._collapseFn) {
+            container._collapseFn(
+                container.arguments.container,
+                container.arguments.response,
+                container.arguments.container_height,
+                container.arguments.container_width,
+                container.arguments.button
+            );
+
+            container.arguments = null;
+            container._collapseFn = null;
+        }
+});
+
+
         the_modal.show();
 
 
@@ -695,6 +722,7 @@ function handle_ratings_button(rec_id)
                 return;
             }
             submit_ratings(rec_id,star_rating,feedback_text,modal_body);
+
         })
 
 
@@ -733,6 +761,12 @@ async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
         })
         const res =  await feedback.json();
         console.log("Feedback data posted successfully: ",res);
+        if(res.previously_submitted)
+        {
+            submitted[recommendation_id] = true;
+            modal_body.innerHTML = "Feedback already submitted for this recommendation";
+            return;
+        }
         modal_body.innerHTML = "Feedback successfully submitted";
         submitted[recommendation_id] = true;
     }
