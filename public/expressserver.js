@@ -393,47 +393,15 @@ RULES:
 `;
 
 
-                // post the user prompt to the OpenRouter API
-                console.log("Sending request to OpenRouter...");
-
-                const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                    "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:3000", 
-                    "X-Title": "SaaS Idea Generator"
-                    
-                    },
-                    body: JSON.stringify(
-                        // indicates the AI model used
-                        {  model:"meta-llama/llama-3.1-8b-instruct", messages: [
-            { role: "system", content: "Expand on SaaS product/service idea summary and include risk assessment" },
-            { role: "user", content: full_summary_prompt } // sends the user prompt
-
-            ], max_tokens: 360 }) // sets a maximum token limit 
-
-        });
-        console.log("OpenRouter response status:", resp.status);
-
-        if (!resp.ok) 
-        {
-            const error_text = await resp.text();
-            console.error("Model API error:", error_text);
-            return response.status(resp.status).json({ error: error_text });
-        }
-        
+                // post the user prompt to the Ollama API
+                
 
 
             // asynchronously wait for the JSON response
-            const result = await resp.json();
-            console.log("OpenRouter result: ",result);
+            const result = await call_api(full_summary_prompt);
             // parse the response and extract the text content
 
-            let expanded_summary =
-            result?.choices?.[0]?.message?.content ||
-            result?.choices?.[0]?.text ||
-            "";
+            let expanded_summary = result?.response?.trim() || "";
 
             expanded_summary = String(expanded_summary).trim();
 
