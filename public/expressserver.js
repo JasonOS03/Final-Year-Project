@@ -68,6 +68,12 @@ app.use(
     app.get("/retrieve-recommendations", async(request,response)=>
     {
         try{
+            // Check if user is logged in
+            if (!request.session.username) {
+                console.log("User not logged in, session username is undefined");
+                return response.json({ output: [] });
+            }
+            
             // find all documents in the database where
             const query = await the_database.find({
                 selector:
@@ -106,13 +112,17 @@ app.use(
                     return true; 
                 }); 
 
-                const unique_dates = new Set(deduplicated_values.map(doc => doc.date_inserted)).size;
+                // Filter out incomplete recommendations that contain "undefined" or are malformed
+                const complete_recommendations = deduplicated_values.filter(doc => {
+                    return doc.recomm_text && 
+                           !doc.recomm_text.includes("undefined") &&
+                           doc.recomm_text.trim().length > 0;
+                });
 
-                let limit = 3 + (unique_dates - 1);
+                // Return up to 4 valid complete recommendations
+                const final_recommendations = complete_recommendations.slice(0, 4);
 
-                const shrink_limit = deduplicated_values.slice(0, limit);
-
-                return response.json({ output: shrink_limit });
+                return response.json({ output: final_recommendations });
 
 
 
@@ -120,6 +130,64 @@ app.use(
             console.log("failed to retrieve recommendations from the database",err);
             return;
         };
+    });
+
+    app.post("/regenerate-recommendations", async (request, response) => {
+        try {
+            const username = request.session.username;
+            
+            // Check if user is logged in
+            if (!username) {
+                console.log("User not logged in");
+                return response.status(401).json({ error: "User not logged in" });
+            }
+            
+            // Fetch user's current ideas and products
+            const ideas_query = await the_database.find({
+                selector: {
+                    username: username,
+                    ideas: {$exists: true}
+                },
+                fields: ["ideas"]
+            });
+            
+            const products_query = await the_database.find({
+                selector: {
+                    username: username,
+                    products: {$exists: true}
+                },
+                fields: ["products"]
+            });
+            
+            const ideas = ideas_query.docs[0]?.ideas || [];
+            const products = products_query.docs[0]?.products || [];
+            
+            if (ideas.length === 0 && products.length === 0) {
+                return response.status(400).json({ 
+                    error: "No ideas or products found. Please update your profile first." 
+                });
+            }
+            
+            console.log("Regenerating recommendations for user:", username);
+            console.log("Current ideas:", ideas);
+            console.log("Current products:", products);
+            
+            // Generate new recommendation (which deletes old ones internally)
+            const new_recommendation = await generate_new_recommendation(username, products, ideas);
+            
+            return response.json({ 
+                success: true, 
+                message: "Recommendations regenerated successfully",
+                new_recommendation: new_recommendation
+            });
+            
+        } catch (err) {
+            console.error("Failed to regenerate recommendations:", err);
+            return response.status(500).json({ 
+                error: "Failed to regenerate recommendations",
+                details: err.message 
+            });
+        }
     });
 
     app.post("/register_details", async (request,response)=>
@@ -381,12 +449,15 @@ Potential Cost: <text>
 Size of Potential Market: <text>
 Uniqueness of Product Idea: <text>
 Overall Risk Grading: <low/medium/high>
-Sources: <links>
+Sources: https://example1.com https://example2.com
 
 RULES:
 - Do NOT add any text before "1." or after the final "Sources:" line.
 - Do NOT use markdown formatting.
 - The content "Overall Risk Grading" field must be either low, medium or high
+- Sources MUST contain at least 2 real, reputable URLs related to the product idea or market
+- ALWAYS include valid sources - never skip the Sources section
+- Sources must be on a single line separated by spaces
 - Do NOT add summaries, intros, or conclusions.
 - Do NOT change the heading names.
 - Do NOT add blank lines anywhere.
@@ -456,13 +527,20 @@ RULES:
         try{
         let user = request.session.username;
         console.log("RAW SESSION USER:", user);
+        
+        // Check if user is logged in
+        if (!user) {
+            console.log("User not logged in");
+            return response.status(401).json({ error: "User not logged in" });
+        }
 
         user = user.trim();
         console.log("SESSION USER:", JSON.stringify(user));
-         const ideas_query = await the_database.find({
+        const ideas_query = await the_database.find({
           selector:
           {
-                 username : user
+                 username : user,
+                 ideas: {$exists: true}
                  
           },
           fields:
@@ -474,7 +552,8 @@ RULES:
         const product_query = await the_database.find({
             selector:
           {
-                 username : user
+                 username : user,
+                 products: {$exists: true}
                  
           },
           fields:
@@ -505,12 +584,18 @@ RULES:
                  
           }
         });
-        const ideas_document = ideas_query.docs.find(d => d.ideas);
-        const products_document = product_query.docs.find(d => d.products);
-        const competitors_document = competitors_query.docs.find(d=>Array.isArray(d.user_entered_competitors));
+        
+        // Find documents that actually have the ideas, products, and competitors fields
+        const ideas_document = ideas_query.docs.find(d => d.ideas && Array.isArray(d.ideas));
+        const products_document = product_query.docs.find(d => d.products && Array.isArray(d.products));
+        const competitors_document = competitors_query.docs.find(d => Array.isArray(d.user_entered_competitors));
+        
         console.log("COMPETITORS DOCUMENT:", JSON.stringify(competitors_document, null, 2));
-        console.log("IDEAS QUERY RAW:", ideas_query); 
-        console.log("PRODUCT QUERY RAW:", product_query);
+        console.log("IDEAS DOCUMENT FOUND:", ideas_document ? "YES" : "NO", ideas_document ? JSON.stringify(ideas_document) : "");
+        console.log("PRODUCTS DOCUMENT FOUND:", products_document ? "YES" : "NO", products_document ? JSON.stringify(products_document) : "");
+        console.log("IDEAS QUERY ALL DOCS:", ideas_query.docs.map(d => ({id: d._id, hasIdeas: !!d.ideas}))); 
+        console.log("PRODUCT QUERY ALL DOCS:", product_query.docs.map(d => ({id: d._id, hasProducts: !!d.products})));
+        
         // MIGRATION: Normalize old competitor schema to new schema
         
 
@@ -617,8 +702,9 @@ app.post("/update_profile",async (request,response) =>{
         const new_products =  request.body.products;
         const new_competitors = request.body.competitors
 
-
-        if(old_ideas.length !== new_ideas.length || old_products.length !== new_products.length)
+        // Check if ideas or products have actually changed (content or length)
+        if(JSON.stringify(old_ideas) !== JSON.stringify(new_ideas) || 
+           JSON.stringify(old_products) !== JSON.stringify(new_products))
         {
             changed = true;
         }
@@ -691,13 +777,15 @@ app.post("/update_profile",async (request,response) =>{
         Sources: https://example1.com https://example2.com
 
         Rules:
-        - Sources MUST be on the same line as the "Sources:" header
-        - You MUST replace the examples with reputable, real sources.
-        - Do NOT add any text before or after the paragraphs or lines.
-        - Do NOT use markdown formatting.
-        - Do NOT add summaries, intros, or conclusions.
-        - Do NOT change the heading names.
-        - Do NOT add blank lines anywhere.
+        - Sources MUST be on the same line as the "Sources:" header and MUST contain at least 2 real, reputable URLs
+        - You MUST provide actual reputable sources (like company websites, industry articles, etc.)
+        - You MUST replace the examples with real sources related to the product
+        - Do NOT add any text before or after the paragraphs or lines
+        - Do NOT use markdown formatting
+        - Do NOT add summaries, intros, or conclusions
+        - Do NOT change the heading names
+        - Do NOT add blank lines anywhere
+        - ALWAYS include valid sources - never output "No sources" or skip the Sources section
         `;
          const insights_data = await call_api(insights_prompt);
          const response_data = insights_data.response
@@ -741,6 +829,13 @@ app.post("/update_profile",async (request,response) =>{
     })
     app.get("/retrieve_feedback_status",async(request,response)=>{
         const username = request.session.username
+        
+        // Check if user is logged in
+        if (!username) {
+            console.log("User not logged in");
+            return response.status(401).json({error:"User not logged in"});
+        }
+        
         try{
         const submitted = await the_database.find(
             {selector:
@@ -861,7 +956,26 @@ app.post("/update_profile",async (request,response) =>{
                   3. Markdown must not be used
                   4. do not add any text, whitespace of blank lines before the idea
                   `;
-                // post the user prompt to the OpenRouter API
+                
+                // Delete old recommendations for this user that don't match the current api_prompt
+                const old_recomms = await the_database.find({
+                    selector: {
+                        username: username,
+                        recomm_text: {$exists: true},
+                        api_prompt: {$ne: api_prompt}
+                    }
+                });
+                
+                for (const doc of old_recomms.docs) {
+                    try {
+                        await the_database.destroy(doc._id, doc._rev);
+                        console.log("Deleted old recommendation:", doc._id);
+                    } catch (err) {
+                        console.error("Error deleting old recommendation:", err);
+                    }
+                }
+                
+                // post the user prompt to the Ollama API
                 const result = await call_api(api_prompt);
             // parse the response and extract the text content
 

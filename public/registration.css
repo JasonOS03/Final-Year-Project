@@ -1,0 +1,168 @@
+/* ----------------------------------------------------------
+   GLOBAL PAGE STYLING
+---------------------------------------------------------- */
+
+body {
+    background-color: #f8f9fa;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 2rem 1rem;
+    color: #212529;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+p {
+    color: #444;
+    margin-bottom: 0.5rem;
+}
+
+/* ----------------------------------------------------------
+   FORM CONTAINERS
+---------------------------------------------------------- */
+
+#personal_details_div,
+#idea_list_div,
+#product_portfolio_div,
+#competitor_div {
+    border-radius: 12px;
+    padding: 2rem !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    margin-bottom: 2rem;
+}
+
+/* ----------------------------------------------------------
+   INPUTS & FORM ELEMENTS
+---------------------------------------------------------- */
+
+input.form-control,
+textarea.form-control,
+select.form-select {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-select:focus {
+    outline: 3px solid #0d6efd;
+    border-color: #0d6efd;
+    box-shadow: none;
+}
+
+/* ----------------------------------------------------------
+   CHECKBOXES
+---------------------------------------------------------- */
+
+.form-check {
+    text-align: left;
+    margin-bottom: 0.5rem;
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+}
+
+/* ----------------------------------------------------------
+   BUTTONS
+---------------------------------------------------------- */
+
+button,
+#register_button {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#add_ideas_button,
+#add_product,
+#add_competitor {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+}
+
+#add_ideas_button:hover,
+#add_product:hover,
+#add_competitor:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-1px);
+}
+
+#register_button {
+    background-color: #198754;
+    border: none;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+}
+
+#register_button:hover {
+    background-color: #157347;
+    transform: translateY(-1px);
+}
+
+/* ----------------------------------------------------------
+   PRODUCT & COMPETITOR BLOCKS
+---------------------------------------------------------- */
+
+.individual-product,
+.individual-competitor {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.product-header,
+.competitor-header {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* ----------------------------------------------------------
+   RANGE SLIDER
+---------------------------------------------------------- */
+
+.price_range {
+    width: 100%;
+}
+
+.price_range:focus {
+    outline: 3px solid #0d6efd;
+}
+
+/* ----------------------------------------------------------
+   MOBILE RESPONSIVENESS
+---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    #personal_details_div,
+    #idea_list_div,
+    #product_portfolio_div,
+    #competitor_div {
+        padding: 1.5rem !important;
+    }
+
+    .individual-product,
+    .individual-competitor {
+        padding: 1rem;
+    }
+
+    button {
+        font-size: 1rem;
+    }
+}

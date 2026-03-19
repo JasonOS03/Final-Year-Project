@@ -21,9 +21,15 @@ function validate_username()
 function validate_password()
 {
     const password = document.getElementById("register_password").value;
+    const u_name = document.getElementById("register_uname").value;
     const regex = /^[A-Za-z](?=.*\d).{9,}$/;
     const matching =  regex.test(password);
 
+    if(password === u_name)
+    {
+        error_section.innerHTML = "Username and password must different"
+        return false;
+    }
     if(!matching)
     {
         error_section.innerHTML = "Password must be at least 10 characters long and must contain at least one digit and must start with a letter"
@@ -70,7 +76,42 @@ add_products_button.addEventListener("click",()=>{
 
     product_portfolio.appendChild(duplicate);
 
-})
+});
+// ADD THIS
+const add_competitor = document.getElementById("add_competitor");
+
+let competitor_count = 1;
+
+add_competitor.addEventListener("click", () => {
+    const template = document.querySelector(".individual-competitor");
+    const clone = template.cloneNode(true);
+
+    clone.querySelector(".competitor-header").textContent = "Competitor " + ++competitor_count;
+
+    clone.querySelectorAll("input").forEach(input => {
+        if (input.type === "text") input.value = "";
+        if (input.type === "checkbox") input.checked = false;
+    });
+
+    document.querySelector("#competitor_div").appendChild(clone);
+});
+
+document.addEventListener("click", e => {
+    if (e.target.id === "add_product" && e.target.closest(".individual-competitor")) {
+
+        const comp = e.target.closest(".individual-competitor");
+        const template = comp.querySelector(".individual-product");
+        const clone = template.cloneNode(true);
+
+        clone.querySelectorAll("input").forEach(input => {
+            if (input.type === "text") input.value = "";
+            if (input.type === "checkbox") input.checked = false;
+        });
+
+        comp.appendChild(clone);
+    }
+});
+
 
 register_button.addEventListener("click",async (e)=>{
     e.preventDefault();
@@ -210,9 +251,9 @@ register_button.addEventListener("click",async (e)=>{
             const market_position = comp.querySelector(".position").value
             const sources = comp.querySelector(".link-source").value
         // create an array of values for each individual product 
-        const products = Array.from(document.querySelectorAll(".individual-product")).map(p => {
-            const product_name =  p.querySelector(".product-name");
-            const target_audience = p.querySelector(".target-audience");
+        const products = Array.from(comp.querySelectorAll(".individual-product")).map(p => {
+            const product_name =  p.querySelector(".product-name").value;
+            const target_audience = p.querySelector(".target-audience").value;
             categories_array = []; //initialise empty product array
              // initialise empty industries array
             const categories = p.querySelectorAll(".categories-checkbox");
@@ -224,24 +265,24 @@ register_button.addEventListener("click",async (e)=>{
             }
         });
 
-       const price_range = p.querySelector(".price_range");
+       const price_range = p.querySelector(".price_range").value;
 
 
 
         // return the description, subscription types array, prices, price range and industries array
          return {
-        product_name : product_name.value,
-        target_audience: target_audience.value,
+        product_name : product_name,
+        target_audience: target_audience,
         categories: categories_array,
-        price_range: price_range.value
+        price_range: price_range
 
         };
         
         });
         return {
-        competitor : competitor_name.value,
-        market_pos: market_position.value,
-        source: sources.value,
+        competitor : competitor_name,
+        market_pos: market_position,
+        source: sources,
         products: products
 
         };

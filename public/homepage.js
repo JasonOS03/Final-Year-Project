@@ -13,7 +13,9 @@ const view_buttons = document.querySelectorAll(".view_full_recomm");
 document.addEventListener("DOMContentLoaded", async ()=>{
 try{
 
-    const get_submitted_feedback = await fetch("/retrieve_feedback_status");
+    const get_submitted_feedback = await fetch("/retrieve_feedback_status",{
+        credentials: "include"
+    });
     const feedback_data = await get_submitted_feedback.json();
 
     submitted = {};
@@ -27,7 +29,8 @@ try{
         headers:
         {
             "Content-Type": "application/json"
-        }
+        },
+        credentials: "include"
     })
     const retrieval_response = await retrieve_data.json();
     const competitors = retrieval_response.competitors;
@@ -37,7 +40,8 @@ try{
         method: "GET",
         headers: {
             "Content-Type" : "application/json"
-        }
+        },
+        credentials: "include"
     }
     )
     const backend_response = await retrieval.json();
@@ -88,12 +92,9 @@ try{
     button.addEventListener("click",()=>{
         expand(container,response,button);
     })
+    });
 
     handle_filter_input();
-
-
-
-    });
 
 
         async function expand(container,response,button){
@@ -154,8 +155,10 @@ try{
             const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const sources = lower_output.match(/sources[:\-–]\s*([^\n]+)/i)?.[1] ||
-             (/source[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            const sources_raw = lower_output.match(/sources[:\-–]\s*(.+)/i)?.[1] || "";
+            // Extract URLs from sources
+            const sources_urls = sources_raw.match(/https?:\/\/\S+/g) || [];
+            const clickable_sources = sources_urls.length > 0 ? sources_urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : sources_raw && sources_raw.length > 0 ? sources_raw : "No sources available";
             const risk_level =(
                 lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
                 lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
@@ -185,7 +188,7 @@ try{
             <p>${uniqueness}</p>
             <br><br>
             <label>Sources:</label>
-            <p>${sources}</p>
+            <p>${clickable_sources}</p>
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
@@ -268,6 +271,11 @@ try{
      comp_button.addEventListener("click",
         handle_click(products,ideas,competitors)
      );
+
+    // function call for regenerate recommendations button creation
+     const regen_button = create_regenerate_button();
+     carousel.parentNode.insertBefore(regen_button,carousel);
+     regen_button.addEventListener("click", handle_regenerate_click);
   // remove double quotes from the response
 }catch(err)
 {
@@ -284,7 +292,7 @@ function create_modal()
         modal_div.id = "competitor_modal";
         modal_div.setAttribute("aria-hidden","true");
         modal_div.setAttribute("aria-modal","true");
-        modal_div,setAttribute("role","dialog");
+        modal_div.setAttribute("role","dialog");
         const document_div = document.createElement("div");
         document_div.classList.add("modal-dialog", "modal-dialog-centered");
         document_div.setAttribute("role","document");
@@ -444,12 +452,12 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     // extract the source links provided
                     // everything including newlines are captured
                     // stops at the heading of the next section
-                    const sources = product_insights.match(/Sources[:\-–]\s*([\s\S]*?)(?=\n[A-Z][a-z]+[:\-–]|$)/i)?.[1].trim() || "";
+                    const sources = product_insights.match(/Sources[:\-–]\s*([\s\S]*?)(?=\n[A-Z][a-z]+[:\-–]|$)/i)?.[1]?.trim() || product_insights.match(/Sources[:\-–]\s*(.+)/i)?.[1] || "";
                     // extract the URL's and match the data with the https:// or http:// substring
-                    const urls = sources.match(/https?:\/\/[^\s]+/g) || [];
+                    const urls = sources.match(/https?:\/\/\S+/g) || [];
                     // create clickable links for the urls. The map function creates a new array of href links joined by a breakpoint
                     // fallback message shown if no sources were provided
-                    const clickable_sources = urls.length ? urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : "No sources provided";
+                    const clickable_sources = urls.length > 0 ? urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : sources && sources.length > 0 ? sources : "No sources provided";
 
 
                     accordion_body.innerHTML = `
@@ -530,6 +538,61 @@ function create_competitor_button()
         view_competitor_button.textContent = "View Competitors";
         return  view_competitor_button
 }
+
+function create_regenerate_button()
+{
+        const regenerate_button = document.createElement("button");
+        regenerate_button.classList.add("bg-info","text-white", "p-1", "rounded", "mb-2","regenerate-recommendations","mx-auto","d-block");
+        regenerate_button.textContent = "Regenerate Recommendations";
+        return regenerate_button
+}
+
+async function handle_regenerate_click()
+{
+    try {
+        const response = await fetch("/regenerate-recommendations", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include"
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            const errorModal = create_modal();
+            errorModal.title.textContent = "Regeneration Failed";
+            errorModal.modal_body.innerHTML = `<p>${result.error || "Failed to regenerate recommendations"}</p>`;
+            const theModal = new bootstrap.Modal(errorModal.modal);
+            theModal.show();
+            return;
+        }
+        
+        // Show success message
+        const successModal = create_modal();
+        successModal.title.textContent = "Recommendations Regenerated";
+        successModal.modal_body.innerHTML = "<p>Your recommendations have been successfully regenerated based on your current ideas and products. Please refresh the page to view the updated recommendations.</p>";
+        const theModal = new bootstrap.Modal(successModal.modal);
+        theModal.show();
+        
+        console.log("Recommendations regenerated successfully:", result);
+        
+        // Optionally reload after a delay
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+        
+    } catch (err) {
+        console.error("Error regenerating recommendations:", err);
+        const errorModal = create_modal();
+        errorModal.title.textContent = "Error";
+        errorModal.modal_body.innerHTML = "<p>An error occurred while regenerating recommendations. Please try again.</p>";
+        const theModal = new bootstrap.Modal(errorModal.modal);
+        theModal.show();
+    }
+}
+
 function handle_click(products,ideas,competitors)
 {
     return async() =>
@@ -745,7 +808,7 @@ function create_ratings()
         ratings_input.setAttribute("data-min","0");
         ratings_input.setAttribute("data-max","5");
         ratings_input.setAttribute("data-step","1");
-        rating_input.setAttribute("aria-label","rating from 0-5 stars");
+        ratings_input.setAttribute("aria-label","rating from 0-5 stars");
         return ratings_input
 }
 

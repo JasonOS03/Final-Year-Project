@@ -338,7 +338,7 @@ add_competitor.addEventListener("click",()=>{
     });
      duplicate.querySelector(".add_product").addEventListener("click",add_product);
 
-    const competitor_div = document.getElementById("competitor_div")
+    const competitor_div = document.getElementById("competitor_div");
     competitor_div.appendChild(duplicate);
 
      
