@@ -130,6 +130,13 @@ try{
             right_arrow.style.display = "none";
         }
 
+        const spinner = create_spinner(); 
+        spinner.textContent = "retrieving detailed summary...";
+        container.appendChild(spinner);
+        spinner.classList.remove("text-success");
+        spinner.classList.add("text-warning");
+
+        await new Promise(requestAnimationFrame);
         try
         {
             const detailed_summary  =  await fetch("/retrieve_full_summary",
@@ -147,6 +154,7 @@ try{
                 })
             })
             const resp = await detailed_summary.json();
+            spinner.remove();
             if (!resp.output || typeof resp.output !== "string") 
                 { console.warn("Output empty: ", resp); container.innerHTML = "<p>Summary retrieval failure</p>"; return; }
             const lower_output = resp.output.toLowerCase();
@@ -228,6 +236,7 @@ try{
         catch(err)
         {
             console.error("Failed to send summary to the backend, error: ",err);
+            spinner.remove();
         }
         function collapse(container,response,container_height,container_width,button){
             container.style.width = container_width + "px";
@@ -558,6 +567,8 @@ function create_regenerate_button()
 
 async function handle_regenerate_click()
 {
+    const spinner = create_spinner();
+    document.body.appendChild(spinner);
     try {
         const response = await fetch("/regenerate-recommendations", {
             method: "POST",
@@ -585,7 +596,7 @@ async function handle_regenerate_click()
         setTimeout(() => {
             location.reload();
         }, 2000);
-        
+        spinner.remove();
     } catch (err) {
         console.error("Error regenerating recommendations:", err);
         const errorModal = create_modal();
@@ -849,4 +860,15 @@ async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
     {
         console.error("failed to send the ratings to the database",err);
     }
+}
+function create_spinner()
+{
+    const loading_spinner = document.createElement("div");
+    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.role = "status";
+    const spinner_span = document.createElement("span");
+    spinner_span.classList.add("visually-hidden");
+    spinner_span.textContent = "Saving your details and generating your recommendations...";
+    loading_spinner.appendChild(spinner_span);
+    return loading_spinner;
 }

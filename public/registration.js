@@ -316,6 +316,8 @@ register_button.addEventListener("click",async (e)=>{
     {
         console.error("failed to send competitor details to the backend");
     }
+        const spinner = create_spinner();
+        document.body.appendChild(spinner);
 
     try{
         const generate_recommendations = await fetch("/generate_recommendations", {
@@ -338,9 +340,22 @@ register_button.addEventListener("click",async (e)=>{
     }catch(err)
     {
         console.error("failed to send recommendation generation request to the backend",err);
+        spinner.remove();
+        error_section.innerHTML = "Error generating recommendations, please try again";
     }
 
 
 
-})
+});
+function create_spinner()
+{
+    const loading_spinner = document.createElement("div");
+    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.role = "status";
+    const spinner_span = document.createElement("span");
+    spinner_span.classList.add("visually-hidden");
+    spinner_span.textContent = "Saving your details and generating your recommendations...";
+    loading_spinner.appendChild(spinner_span);
+    return loading_spinner;
+}
 

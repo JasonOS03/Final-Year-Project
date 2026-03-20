@@ -251,6 +251,9 @@ async function update_profile()
         };
         });
         // send a POST method to the backend to update the profile
+        const spinner = create_spinner();
+        spinner.textContent = "Saving and updating your changes..."
+        document.body.appendChild(spinner);
         const update = await fetch("/update_profile",{
             method : "POST",
             headers:
@@ -349,3 +352,14 @@ add_competitor?.addEventListener("click",()=>{
 });
 });
 
+function create_spinner()
+{
+    const loading_spinner = document.createElement("div");
+    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.role = "status";
+    const spinner_span = document.createElement("span");
+    spinner_span.classList.add("visually-hidden");
+    spinner_span.textContent = "Saving your details and generating your recommendations...";
+    loading_spinner.appendChild(spinner_span);
+    return loading_spinner;
+}
