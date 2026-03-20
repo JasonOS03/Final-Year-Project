@@ -252,7 +252,6 @@ async function update_profile()
         });
         // send a POST method to the backend to update the profile
         const spinner = create_spinner();
-        spinner.textContent = "Saving and updating your changes..."
         document.body.appendChild(spinner);
         const update = await fetch("/update_profile",{
             method : "POST",

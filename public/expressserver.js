@@ -223,22 +223,18 @@ app.use(
                 const the_ideas = JSON.stringify(ideas);
 
 
-                const api_prompt  = `For this SaaS startup, 
-                generate exactly 3 distinct product/service ideas numbered from 1-3 
-                in the following format: 
+                const api_prompt  = `For this SaaS startup, generate exactly 3 distinct product/service ideas based on this portfolio: ${the_products} and these ideas: ${the_ideas}
+                Output exactly:
                 1. idea 1 here
                 2. idea 2 here
                 3. idea 3 here
-                 based on this portfolio: ${the_products}
-                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
-                  other rules you must follow are:
-                  1. The output must not include summaries, intros or conclusions
-                  2. Exactly three unique recommendations must be generated
-                  3. no text can be added between each idea
-                  4. Markdown must not be used
-                  5. Do not combine the ideas into one idea
-                  6. do not add any text, whitespace of blank lines before each idea
-                  7. do not add any text before the list of ideas or after the list`;
+                Rules:
+                1. No intro, summary, or conclusion
+                2. Exactly three unique ideas
+                3. No text between ideas
+                4. No markdown
+                5. Do not combine ideas
+                6. No extra text before or after the list`;
 
 
                 const result = await call_api(api_prompt);
@@ -511,9 +507,15 @@ RULES:
         const competitors_query = await the_database.find({
           selector:
           {
-                 username : user
+                 username : user,
+                 user_entered_competitors: {$exists: true}
                  
-          }
+          },
+          fields:
+          [
+                "user_entered_competitors",
+                "username"
+          ]
         });
         
         // Find documents that actually have the ideas, products, and competitors fields
@@ -542,66 +544,37 @@ RULES:
 app.post("/update_profile",async (request,response) =>{
 
             try{
-                 const user = request.session.username;
-           const ideas_query = await the_database.find({
-            selector:
-            {
-                    username : user,
-                    ideas: {$exists: true}
-                 
-            },
-            fields:
-            [
-                "_id",
-                "_rev",
-                 "ideas",
-                "username"
-            ]
-            });
-            const product_query = await the_database.find({
-                selector:
-             {
-                    username : user,
-                    products: {$exists: true}
-                 
-            },
-            fields:
-            [
-                    "_id",
-                    "_rev",
-                    "products",
-                    "username"
-            ]
-            });
-            const competitor_query = await the_database.find({
-                selector:
-             {
-                    username : user,
-                    user_entered_competitors: {$exists: true}
-                 
-            },
-            fields:
-            [
-                    "_id",
-                    "_rev",
-                    "user_entered_competitors",
-                    "competitors",
-                    "username"
-            ]
-            });
-            const summary_query = await the_database.find(
-                {
-                    selector:
-                    {
-                        username: user,
-                        recomm_text: {"$exists":true}
-                    },
-                    fields:
-                    [
-                        "recomm_text"
-                    ]
-                }
-            )
+                const [ideas_query, product_query,competitor_query,summary_query] = await Promise.all([
+                    the_database.find({
+                        selector: {
+                            username: request.session.username,
+                            ideas: { $exists: true }
+                        },
+                        fields: ["_id", "_rev", "ideas", "username"]
+                    }),
+                    the_database.find({
+                        selector: {
+                            username: request.session.username,
+                            products: { $exists: true }
+                        },
+                        fields: ["_id", "_rev", "products", "username"]
+                    }),
+                    the_database.find({
+                        selector: {
+                            username: request.session.username,
+                            user_entered_competitors: { $exists: true }
+                        },
+                        fields: ["_id", "_rev", "user_entered_competitors", "competitors", "username"]
+                    }),
+                    the_database.find({
+                        selector: {
+                            username: request.session.username,
+                            recomm_text: { $exists: true }
+                        },
+                        fields: ["recomm_text"]
+                    })
+                ]);
+                const user = request.session.username;
            
 
         let ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
@@ -609,7 +582,7 @@ app.post("/update_profile",async (request,response) =>{
         let competitors_document = competitor_query.docs.find(
             d => d.user_entered_competitors !== undefined || d.competitors !== undefined
         );
-        const the_summaries = [summary_query.docs[0].recomm_text];
+        const the_summaries = summary_query.docs.map(doc => doc.recomm_text).filter(Boolean);
 
         if (!ideas_document) 
             { ideas_document = 
@@ -678,52 +651,33 @@ app.post("/update_profile",async (request,response) =>{
     } 
     });
     app.post("/retrieve_accordion_data",async (request,response)=>{
-
-        const product = request.body.competitor_product
-        const username =  request.session.username
-        const insights_query = await the_database.find({
-            selector:
-            {
-                username,
-                product: product,
-                insights: {"$exists":true}
-            },
-            fields:
-            [
-                "insights"
-            ]
+        try{
+            const product = request.body.competitor_product;
+            const username = request.session.username;
+            const insights_data = await get_or_generate_accordion_insight(username, product);
+            response.json({insights_data});
         }
-        );
-        if(insights_query.docs.length >= 1)
+        catch(err)
         {
-            return response.json({insights_data: insights_query.docs[0].insights})
+            console.error("Failed to retrieve accordion insight", err);
+            response.status(500).json({error:"Failed to retrieve accordion insight"});
         }
-
-        insights_prompt =  `
-        Based on the following SaaS product information:
-        ${product}
-        
-        Generate short paragraphs detailing the strengths and weaknesses of this SaaS product/service. Your output must be in the following format:
-        Strengths: <text>
-        Weaknesses: <text>
-        Sources: https://example1.com https://example2.com
-
-        Rules:
-        - Sources MUST be on the same line as the "Sources:" header and MUST contain at least 2 real, reputable URLs
-        - You MUST provide actual reputable sources (like company websites, industry articles, etc.)
-        - You MUST replace the examples with real sources related to the product
-        - Do NOT add any text before or after the paragraphs or lines
-        - Do NOT use markdown formatting
-        - Do NOT add summaries, intros, or conclusions
-        - Do NOT change the heading names
-        - Do NOT add blank lines anywhere
-        - ALWAYS include valid sources - never output "No sources" or skip the Sources section
-        `;
-         const insights_data = await call_api(insights_prompt);
-         const response_data = insights_data.response
-         await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data});
-         response.json({insights_data: response_data});
-
+    });
+    app.post("/retrieve_accordion_data_batch", async (request, response) => {
+        try{
+            const username = request.session.username;
+            const products = Array.isArray(request.body.products) ? request.body.products : [];
+            const unique_products = Array.from(new Set(products.filter(Boolean)));
+            const insights_data = await Promise.all(
+                unique_products.map(product => get_or_generate_accordion_insight(username, product))
+            );
+            return response.json({insights_data});
+        }
+        catch(err)
+        {
+            console.error("Failed to retrieve accordion insights batch", err);
+            return response.status(500).json({error:"Failed to retrieve accordion insights batch"});
+        }
     });
     app.post("/post_feedback",async (request,response)=>{
         try{
@@ -828,14 +782,55 @@ app.post("/update_profile",async (request,response) =>{
                 })
                 .join("\n\n");
         }
+        async function get_or_generate_accordion_insight(username, product)
+        {
+            const insights_query = await the_database.find({
+                selector:
+                {
+                    username,
+                    product: product,
+                    insights: {"$exists":true}
+                },
+                fields:
+                [
+                    "insights"
+                ]
+            });
+
+            if(insights_query.docs.length >= 1)
+            {
+                return insights_query.docs[0].insights;
+            }
+
+            const insights_prompt =  `
+        Based on this SaaS product information:
+        ${product}
+        
+        Output exactly:
+        Strengths: <text>
+        Weaknesses: <text>
+        Sources: https://example1.com https://example2.com
+
+        Rules:
+        - Sources must be on the same line and include at least 2 real URLs
+        - Use real sources related to the product
+        - No text before or after these lines
+        - No markdown
+        - Do not change the headings
+        - No blank lines
+        `;
+            const insights_data = await call_api(insights_prompt);
+            const response_data = insights_data.response;
+            await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data});
+            return response_data;
+        }
         async function generate_competitor_data(username,products,ideas,competitors,the_summaries){
             try{
                 const the_products = JSON.stringify(products);
                 const the_ideas = JSON.stringify(ideas);
 
                 const competitor_data_prompt = `
-
-            return only valid JSON in this specified structure:
+            Return only valid JSON in this structure:
                    
                 {
                         "competitors": [
@@ -857,22 +852,21 @@ app.post("/update_profile",async (request,response) =>{
                     ]
                 }
                     
-                    Based on the following information:
-                     LLM recommendation summary:  ${the_summaries.join("\n")} 
-                     user entered competitors (optional guidance only): ${JSON.stringify(competitors || [])}
-                     user ideas:  ${ideas}
-                     User products: ${products} 
+                    Based on:
+                     LLM recommendation summary: ${the_summaries.join("\n")} 
+                     user entered competitors (optional): ${JSON.stringify(competitors || [])}
+                     user ideas: ${ideas}
+                     user products: ${products} 
 
                         Rules:
-                        1. The competitors generated MUST be real and MUST be SaaS companies
-                        2. The output must not include summaries, intros or conclusions
-                        3. return 3-5 competitors
-                        4. return exactly ONE SaaS product for each competitor
-                        5. The market share must be expressed as a percentage
-                        6. do not add any text, whitespace of blank lines outside of the JSON
-                        7. Categories listed must match the categories the user has selected in the product section
-                        8. source must be a single link to where you found some of this information
-                        9. If user entered competitors are provided, use them to improve relevance and accuracy; otherwise infer suitable competitors from the user's ideas and products
+                        1. Competitors must be real SaaS companies
+                        2. Return 3-5 competitors
+                        3. Return exactly one SaaS product for each competitor
+                        4. Market share must be a percentage
+                        5. No text outside the JSON
+                        6. Categories must match the user's selected product categories
+                        7. Source must be one link
+                        8. If user entered competitors are provided, use them for better relevance; otherwise infer competitors from the user's ideas and products
                         
                         `;
                 const competitor_data =  await call_api(competitor_data_prompt);
@@ -953,18 +947,15 @@ app.post("/update_profile",async (request,response) =>{
                 ).join("\n                ");
 
 
-                const api_prompt  = `For this SaaS startup, 
-                generate exactly ${recommendation_count} distinct product/service ideas
-                in the following format: 
+                const api_prompt  = `For this SaaS startup, generate exactly ${recommendation_count} distinct product/service ideas based on this portfolio: ${the_products} and these ideas: ${the_ideas}
+                Output exactly:
                 ${format_example}
-                 based on this portfolio: ${the_products}
-                  and these ideas: ${the_ideas}. when displaying your ideas, only use the exact formatting specified above and no other type of formatting. 
-                  other rules you must follow are:
-                  1. The output must not include summaries, intros or conclusions
-                  2. Exactly ${recommendation_count} unique recommendations must be generated
-                  3. Markdown must not be used
-                  4. Do not add any text or blank lines before the numbered list
-                  5. Each recommendation must be numbered on its own line
+                Rules:
+                1. No intro, summary, or conclusion
+                2. Exactly ${recommendation_count} unique recommendations
+                3. No markdown
+                4. No extra text or blank lines before the numbered list
+                5. Each recommendation must be on its own numbered line
                   `;
                 
                 let next_recommendation_id = 0;

@@ -130,8 +130,9 @@ try{
             right_arrow.style.display = "none";
         }
 
-        const spinner = create_spinner(); 
-        spinner.textContent = "retrieving detailed summary...";
+        const spinner = create_spinner();
+        const spinner_span = spinner.querySelector("span")
+        spinner_span.textContent = "retrieving detailed summary...";
         container.appendChild(spinner);
         spinner.classList.remove("text-success");
         spinner.classList.add("text-warning");
@@ -421,7 +422,20 @@ async function populate_modal_accordion(competitor_data_retrieval)
             }
         }
 
-                const results = await Promise.all(product_list.map(product => retrieve_accordion_data(product)));
+                product_list = Array.from(new Set(product_list));
+
+                const insights = await fetch("/retrieve_accordion_data_batch",
+                    {
+                        method: "POST",
+                        headers:
+                        {
+                            "Content-Type":"application/json"
+                        },
+                        body: JSON.stringify({ products: product_list })
+                    }
+                );
+                const insights_response = await insights.json();
+                const results = insights_response.insights_data || [];
                 let ind;
 
                 for(ind = 0;ind < product_list.length;ind++){
@@ -488,34 +502,6 @@ async function populate_modal_accordion(competitor_data_retrieval)
             }
     }
 
-async function retrieve_accordion_data(competitor_product)
-{
-    try{
-        const insights = await fetch("/retrieve_accordion_data",
-            {
-                method: "POST",
-                headers:
-                {
-                    "Content-Type":"application/json"
-                },
-                body: JSON.stringify
-                (
-                {
-                    competitor_product: competitor_product
-                }
-                )
-            }
-        )
-            const insights_response =  await insights.json();
-            console.log("Insights response",insights_response);
-            return insights_response.insights_data;
-    }
-    catch(err)
-    {
-        console.error("failed to retrieve competitor product insights",err);
-        return null;
-    }
-}
 
 async function get_competitor_data(products,ideas,competitors)
 {
@@ -568,6 +554,8 @@ function create_regenerate_button()
 async function handle_regenerate_click()
 {
     const spinner = create_spinner();
+    const span = spinner.querySelector("span");
+    span.textContent = "Regenerating the Recommendations";
     document.body.appendChild(spinner);
     try {
         const response = await fetch("/regenerate-recommendations", {
