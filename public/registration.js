@@ -185,7 +185,7 @@ register_button.addEventListener("click",async (e)=>{
    
   
     product_array = []
-    const products = document.querySelectorAll(".individual-product");
+    const products = document.querySelectorAll("#product_portfolio_div .individual-product");
 
     products.forEach(product_block => {
 
@@ -220,6 +220,11 @@ register_button.addEventListener("click",async (e)=>{
         product_array.push(product);
         
     });
+    if(product_array.length < 1 && idea_array.length < 1)
+    {
+        error_section.innerHTML = "Please enter at minimum one idea or one product";
+        return;
+    }
 
     try{
          const product_details = await fetch("/product_details",{
@@ -265,7 +270,7 @@ register_button.addEventListener("click",async (e)=>{
             }
         });
 
-       const price_range = p.querySelector(".price_range").value;
+       const price_range = p.querySelector(".price_range")?.value || "";
 
 
 
@@ -290,7 +295,7 @@ register_button.addEventListener("click",async (e)=>{
         
     try
     {
-        const competitors =  await fetch("/competitor_details",{
+        const competitors_response =  await fetch("/competitor_details",{
             method: "POST",
             headers:
             {
@@ -304,6 +309,8 @@ register_button.addEventListener("click",async (e)=>{
             )
 
         })
+        const resp = await competitors_response.json();
+        console.log(resp.output);
     }
     catch(error)
     {
@@ -328,9 +335,9 @@ register_button.addEventListener("click",async (e)=>{
          console.log(resp.output);
 
          window.location.href = "index.html";
-    }catch
+    }catch(err)
     {
-
+        console.error("failed to send recommendation generation request to the backend",err);
     }
 
 

@@ -266,19 +266,15 @@ async function update_profile()
             })
         })
         // asynchronously wait for the response
-        const backend_update = await update.json();
-        console.log("Backend response: ",backend_update);
-
         if(!update.ok)
         {
+            const backend_update = await update.json();
             console.error("Failed update: ",backend_update);
             return;
         }
 
         // once a successfull response is retrieved, redirect the user to the homepage
-        setTimeout(()=>{
-             window.location.href = "homepage.html";
-        },2000);
+        window.location.href = "homepage.html";
         
 
     }
@@ -310,17 +306,21 @@ const add_competitor = document.getElementById("add_competitor");
         {
             input.checked = false;
         }
+        else if(input.type === "range")
+        {
+            input.value = input.min || "0";
+        }
     });
 
     const parent = competitor_product.parentNode;
     parent.appendChild(duplicate);
 }
 
-add_competitor_product.addEventListener("click",add_product);
+add_competitor_product?.addEventListener("click",add_product);
 
 
 let comp_count = 1;
-add_competitor.addEventListener("click",()=>{
+add_competitor?.addEventListener("click",()=>{
     const compBlock = document.querySelector("#competitor_div .individual-competitor");
      const duplicate = compBlock.cloneNode(true);
      
@@ -334,6 +334,10 @@ add_competitor.addEventListener("click",()=>{
         else if(input.type === "checkbox")
         {
             input.checked = false;
+        }
+        else if(input.type === "range")
+        {
+            input.value = input.min || "0";
         }
     });
      duplicate.querySelector(".add_product").addEventListener("click",add_product);

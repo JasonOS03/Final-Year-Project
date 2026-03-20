@@ -265,16 +265,16 @@ try{
             container._collapseFn = collapse;
 
     }
-    // function call for competitor button creation
+    // call the competitor button creation function
      const comp_button = create_competitor_button();
-     carousel.parentNode.insertBefore(comp_button,carousel);
+     carousel.after(comp_button);
      comp_button.addEventListener("click",
         handle_click(products,ideas,competitors)
      );
 
     // function call for regenerate recommendations button creation
      const regen_button = create_regenerate_button();
-     carousel.parentNode.insertBefore(regen_button,carousel);
+     comp_button.after(regen_button);
      regen_button.addEventListener("click", handle_regenerate_click);
   // remove double quotes from the response
 }catch(err)
@@ -286,6 +286,11 @@ try{
 });
 function create_modal()
 {
+        const existing_modal = document.getElementById("competitor_modal");
+        if (existing_modal) {
+            existing_modal.remove();
+        }
+
         const modal_div =  document.createElement("div");
         modal_div.classList.add("modal", "fade");
         modal_div.tabIndex = -1;
@@ -505,6 +510,9 @@ async function retrieve_accordion_data(competitor_product)
 
 async function get_competitor_data(products,ideas,competitors)
 {
+    if (get_competitor_data.cached_response) {
+        return get_competitor_data.cached_response;
+    }
     try{
         const competitor =  await fetch("/get_competitor_data",
             {
@@ -523,6 +531,7 @@ async function get_competitor_data(products,ideas,competitors)
         )
         const response = await competitor.json();
         console.log("Response received: ",response);
+        get_competitor_data.cached_response = response;
         return response;
     }
     catch
@@ -534,7 +543,7 @@ async function get_competitor_data(products,ideas,competitors)
 function create_competitor_button()
 {
         const view_competitor_button = document.createElement("button");
-        view_competitor_button.classList.add("bg-warning","text-black", "p-1", "rounded", "mb-2","view-competitor","mx-auto","d-block");
+        view_competitor_button.classList.add("bg-warning","text-black", "p-1", "rounded", "mb-2","view-competitor","mx-auto","d-block","mt-4");
         view_competitor_button.textContent = "View Competitors";
         return  view_competitor_button
 }
@@ -563,19 +572,13 @@ async function handle_regenerate_click()
         if (!response.ok) {
             const errorModal = create_modal();
             errorModal.title.textContent = "Regeneration Failed";
-            errorModal.modal_body.innerHTML = `<p>${result.error || "Failed to regenerate recommendations"}</p>`;
+            errorModal.modal_body.innerHTML = `Failed to regenerate recommendations.`;
             const theModal = new bootstrap.Modal(errorModal.modal);
             theModal.show();
             return;
         }
         
         // Show success message
-        const successModal = create_modal();
-        successModal.title.textContent = "Recommendations Regenerated";
-        successModal.modal_body.innerHTML = "<p>Your recommendations have been successfully regenerated based on your current ideas and products. Please refresh the page to view the updated recommendations.</p>";
-        const theModal = new bootstrap.Modal(successModal.modal);
-        theModal.show();
-        
         console.log("Recommendations regenerated successfully:", result);
         
         // Optionally reload after a delay

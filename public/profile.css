@@ -1,0 +1,434 @@
+/* ----------------------------------------------------------
+   GLOBAL PAGE STYLING
+---------------------------------------------------------- */
+
+body {
+    background-color: #f8f9fa;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 2rem 1rem;
+    color: #212529;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+p {
+    color: #444;
+    margin-bottom: 0.5rem;
+}
+
+/* ----------------------------------------------------------
+   NAVIGATION BAR
+---------------------------------------------------------- */
+
+.navbar {
+    padding: 1rem 0;
+    background-color: #ffc107;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.navbar-brand {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #000;
+}
+
+.nav-link {
+    font-weight: 600;
+    color: #000 !important;
+    padding: 0.5rem 1rem;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+/* ----------------------------------------------------------
+   PROFILE CARD
+---------------------------------------------------------- */
+
+.profile-card {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    margin-bottom: 2rem;
+}
+
+.profile-header {
+    text-align: center;
+    padding: 2rem;
+}
+
+.profile-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.profile-settings-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #ffc107;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.profile-settings-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ----------------------------------------------------------
+   FORM CONTAINERS
+---------------------------------------------------------- */
+
+#personal_details_div,
+#idea_list_div,
+#product_portfolio_div,
+#competitor_div {
+    border-radius: 12px;
+    padding: 2rem !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    margin-bottom: 2rem;
+}
+
+.section-note {
+    font-size: 0.9rem;
+    padding: 1rem;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+/* ----------------------------------------------------------
+   INPUTS & FORM ELEMENTS
+---------------------------------------------------------- */
+
+input.form-control,
+textarea.form-control,
+select.form-select {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-select:focus {
+    outline: 3px solid #0d6efd;
+    border-color: #0d6efd;
+    box-shadow: none;
+}
+
+label.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* ----------------------------------------------------------
+   CHECKBOXES
+---------------------------------------------------------- */
+
+.form-check {
+    text-align: left;
+    margin-bottom: 0.5rem;
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-input:focus {
+    outline: 3px solid #0d6efd;
+    box-shadow: none;
+}
+
+/* ----------------------------------------------------------
+   BUTTONS
+---------------------------------------------------------- */
+
+button,
+#update_button {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    cursor: pointer;
+}
+
+#add_ideas_button,
+#add_product,
+#add_competitor {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    width: 100%;
+}
+
+#add_ideas_button:hover,
+#add_product:hover,
+#add_competitor:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-1px);
+}
+
+#update_button {
+    background-color: #198754;
+    border: none;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    color: white;
+    width: auto;
+    margin-top: 1rem;
+}
+
+#update_button:hover {
+    background-color: #157347;
+    transform: translateY(-1px);
+}
+
+#update_button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ----------------------------------------------------------
+   PRODUCT & COMPETITOR BLOCKS
+---------------------------------------------------------- */
+
+.individual-product,
+.individual-competitor {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.product-header,
+.competitor-header,
+.competitor-product-header {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+.section-description {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    color: #444;
+    background-color: rgba(0,0,0,0.03);
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 4px solid #0d6efd;
+}
+
+/* ----------------------------------------------------------
+   RANGE SLIDER
+---------------------------------------------------------- */
+
+.price_range {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.price_range:focus {
+    outline: 3px solid #0d6efd;
+}
+
+.price-display {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+/* ----------------------------------------------------------
+   ERROR MESSAGE
+---------------------------------------------------------- */
+
+#error_text {
+    font-weight: 600;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+#error_text:empty {
+    display: none;
+}
+
+/* ----------------------------------------------------------
+   SUCCESS MESSAGE
+---------------------------------------------------------- */
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+/* ----------------------------------------------------------
+   SKIP LINK (ACCESSIBILITY)
+---------------------------------------------------------- */
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+}
+
+.skip-link:focus {
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0d6efd;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+}
+
+/* ----------------------------------------------------------
+   MOBILE RESPONSIVENESS
+---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem 0.5rem;
+    }
+
+    #personal_details_div,
+    #idea_list_div,
+    #product_portfolio_div,
+    #competitor_div {
+        padding: 1.5rem !important;
+    }
+
+    .individual-product,
+    .individual-competitor {
+        padding: 1rem;
+    }
+
+    button {
+        font-size: 0.95rem;
+        padding: 0.6rem;
+    }
+
+    .profile-settings-btn {
+        width: 40px;
+        height: 40px;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .profile-image {
+        width: 80px;
+        height: 80px;
+    }
+
+    .navbar-nav {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-link {
+        padding: 0.3rem 0.5rem;
+    }
+
+    .product-header,
+    .competitor-header,
+    .competitor-product-header {
+        font-size: 1.1rem;
+    }
+
+    label.form-label {
+        font-size: 0.95rem;
+    }
+
+    input.form-control,
+    select.form-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    h1, h2, h3, h4 {
+        font-size: 1.2rem;
+    }
+
+    #personal_details_div,
+    #idea_list_div,
+    #product_portfolio_div,
+    #competitor_div {
+        padding: 1rem !important;
+    }
+
+    .price-display {
+        font-size: 0.85rem;
+    }
+}
+
+/* ----------------------------------------------------------
+   FOCUS VISIBLE (for keyboard navigation)
+---------------------------------------------------------- */
+
+input:focus-visible,
+button:focus-visible,
+select:focus-visible {
+    outline: 3px solid #0d6efd;
+}
+
+/* ----------------------------------------------------------
+   PRINT STYLES
+---------------------------------------------------------- */
+
+@media print {
+    .navbar,
+    button,
+    #update_button {
+        display: none;
+    }
+
+    body {
+        background-color: white;
+        padding: 0;
+    }
+}

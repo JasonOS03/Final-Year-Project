@@ -3,321 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self'; object-src 'none';">
+    <title>User Profile - SaaS Idea Generator</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://cdn.jsdelivr.net; object-src 'none';">
+    <meta name="description" content="Update your user profile, ideas, products, and market competitors">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="profile.css" rel="stylesheet">
 </head>
 <body>
-    <nav class = "navbar bg-warning mb-2">
-        <div class = "container">
-        <ul class = "bg-warning text-black text-center rounded navbar-nav flex-row gap-5 mx-auto p-3">
-            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "profile.html">Profile</a></li>
-            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "homepage.html">Recommendations</a></li>
-            <li class = "nav-item mr-2 ml-2 p-4"><a class = "nav-link" href = "logout.html">Logout</a></li>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <nav class = "navbar bg-warning" role = "navigation">
+        <div class = "container justify-content-between d-flex align-items-center">
+        <h1 class = "navbar-brand mb-0">GenSaaS</h1>
+        <ul class = "text-black text-center navbar-nav flex-row gap-3">
+            <li class = "nav-item"><a class = "nav-link" href = "profile.html">Profile</a></li>
+            <li class = "nav-item"><a class = "nav-link" href = "homepage.html">Recommendations</a></li>
+            <li class = "nav-item"><a class = "nav-link" href = "logout.html">Logout</a></li>
         </ul>
-        </div>
-    </nav>
-    <div class = "container">
-        <div class = "row justify-content-center">
-        <div class = "card col-md-8 bg-success" >
-        <img class = "img-thumbnail mx-auto d-block bg-success" src = "user_profile.png" alt = "user profile image" width = "100" height = "100">
-        <img class ="img-thumbnail position-absolute bg-success"  src = "settings_icon2.png" alt = "settings button" width = "50" height = "50" style = "top:5px;right:5px;">
-        <div class = "card-body text-center">
-            <h1 class = "text-center text-white p-2 card-title">User Profile</h1>
-            <h2 class = " text-center card-subtitle mb-2 text-muted text-white">Personal Details</h2>
-            <label class = "text-white form-label text-center d-inline-block">Username: </label>
-            <input class = "form-control mb-2" type = "text" id  = "update_uname">
-
-            <label class = "text-white form-label text-center d-inline-block">Password: </label>
-            <input class = "form-control mb-2" type = "password" id = "update_password">
-
-            <label class = "text-white form-label text-center d-inline-block">Email: </label>
-            <input class = "form-control mb-2" type = "text" id = "update_email">
-
-        </div>
     </div>
-    </div>
-    </div>
-    <br><br>
-    <p class = "text-center text-black p-2">Click on the fields to update your portfolio or idea list</p>
-    <br><br>
-    <p id = "error_text"></p>
-    <br><br>
-    <div class = "container">
-        <div class = "row justify-content-center">
-            <div id = "idea_list_div" class = " col-md-8 bg-info text-center rounded p-4">
-                <h3 class = "text-center text-black">Idea List</h3>
-                <br><br>
-                <label class = "text-black form-label">Idea 1: </label>
-                <input class = "form-control mb-2 input-idea" type = "text" placeholder = "Please enter a product/service idea">
+</nav>
 
-                <label class = "text-black form-label">Idea 2: </label>
-                <input class = "form-control mb-2 input-idea" type = "text" placeholder = "Please enter a product/service idea">
+    <main id="main-content">
+        <!-- Profile Header Section -->
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="profile-card col-md-8 bg-success mt-2">
+                    <div class="profile-header">
+                        <img class="profile-image" src="user_profile.png" alt="User profile picture">
+                        <button class="profile-settings-btn" aria-label="Profile settings" title="Settings"><span aria-hidden="true">⚙</span></button>
+                        <h1 class="text-white mb-3">User Profile</h1>
+                    </div>
 
-                <label class = "text-black form-label">Idea 3: </label>
-                <input class = "form-control mb-2 input-idea" type = "text" placeholder = "Please enter a product/service idea">
+                    <!-- Personal Details Section -->
+                    <section id="personal-details" class="card-body text-center" role="region" aria-labelledby="personal-details-header">
+                        <h2 id="personal-details-header" class="text-white mb-4">Personal Details</h2>
+                        
+                        <label class="form-label text-white" for="update_uname">Username: <span class="text-danger" aria-label="required">*</span></label>
+                        <input class="form-control mb-3" type="text" id="update_uname" aria-describedby="uname-help" placeholder="Enter your username" required>
+                        <div id="uname-help" class="form-text mb-3">Your unique username for logging in</div>
 
-                <button class = "form-control mb-2 mt-4" id = "add_ideas_button">+</button>
+                        <label class="form-label text-white" for="update_password">Password: <span class="text-danger" aria-label="required">*</span></label>
+                        <input class="form-control mb-3" type="password" id="update_password" aria-describedby="pwd-help" placeholder="Enter your password" required>
+                        <div id="pwd-help" class="form-text mb-3">Keep this secure and private</div>
 
-
+                        <label class="form-label text-white" for="update_email">Email: <span class="text-danger" aria-label="required">*</span></label>
+                        <input class="form-control mb-4" type="email" id="update_email" aria-describedby="email-help" placeholder="Enter your email address" required>
+                        <div id="email-help" class="form-text mb-3">We'll use this to contact you</div>
+                    </section>
+                </div>
             </div>
         </div>
-    </div>
-    <br><br>
-    <div class = "container">
-        <div class = "row justify-content-center">
-            <div id = "product_portfolio_div" class = " col-md-8 bg-warning text-center rounded p-4">
-                <h4 class = "text-center text-black">Product Portfolio</h4>
-                <div>
-                    <div class =  "individual-product">
-                    <p class = "text-center text-black product-header">Product 1</p3>
-                    <br><br>
 
-                    <p4 class = "text-center text-black">For each option below, select all that apply to your business</p4>
+        <p class="text-center text-muted mt-4 mb-4" aria-label="instructions">Update your portfolio and idea list below</p>
+        <p id="error_text" class="text-center text-danger fw-semibold" role="alert" aria-live="polite"></p>
 
-                    <br><br>
 
-                    <label class = "text-center text-black form-label"> Description: </label>
-                    <input class = "form-control mb-2 product_description" type = "text">
-                
+        <!-- Idea List Section -->
+        <section id="idea-list-section" class="container mt-4" role="region" aria-labelledby="idea-list-header">
+            <div class="row justify-content-center">
+                <div id="idea_list_div" class="col-md-8 bg-info text-center rounded p-4" role="group" aria-labelledby="idea-list-header">
+                    <h2 id="idea-list-header" class="text-black text-center mb-4">Section 2: Your Ideas</h2>
+                    <p class="section-description text-black">Enter up to three product or service ideas. These will be used to generate recommendations.</p>
 
-                    <label class = "text-center text-black mb-2">Subscription types: </label>
-
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "payg" value = "payg">
-                        <label class = "text-center text-black form-check-label">Pay-as-you-go</label>
+                    <div class="mb-3">
+                        <label class="text-black form-label" for="Idea1">Idea 1: </label>
+                        <input class="form-control input-idea" type="text" id="Idea1" placeholder="Enter a product or service idea" aria-describedby="idea-help" required>
                     </div>
 
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "free_tier" value = "free_tier">
-                        <label class = "text-center text-black form-check-label">Free Tier</label>
+                    <div class="mb-3">
+                        <label class="text-black form-label" for="Idea2">Idea 2: </label>
+                        <input class="form-control input-idea" type="text" id="Idea2" placeholder="Enter a product or service idea" aria-describedby="idea-help" required>
                     </div>
 
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "tiered_pricing" value = "tiered_pricing">
-                        <label class = "text-center text-black form-check-label">Tiered Pricing</label>
+                    <div class="mb-4">
+                        <label class="text-black form-label" for="Idea3">Idea 3: </label>
+                        <input class="form-control input-idea" type="text" id="Idea3" placeholder="Enter a product or service idea" aria-describedby="idea-help" required>
                     </div>
 
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "weekly_sub" value = "weekly_sub">
-                        <label class = "text-center text-black form-check-label">Weekly Subscription</label>
+                    <div id="idea-help" class="form-text mb-4">Provide you specific product/service visions</div>
+                    <button class="btn btn-primary w-100" id="add_ideas_button" aria-label="Add another idea">+ Add Idea</button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Product Portfolio Section -->
+        <section id="product-section" class="container mt-4" role="region" aria-labelledby="product-section-header">
+            <div class="row justify-content-center">
+                <div id="product_portfolio_div" class="col-md-8 bg-warning text-center rounded p-4" role="group" aria-labelledby="product-section-header">
+                    <h2 id="product-section-header" class="text-black text-center mb-4">Section 3: Product Portfolio</h2>
+                    <p class="section-description text-black">For each product, select all options that apply to your business.</p>
+
+                    <div class="individual-product">
+                        <h3 class="product-header text-black">Product 1</h3>
+
+                        <div class="mb-3">
+                            <label class="form-label text-black" for="product-desc-1">Description:</label>
+                            <input class="form-control product_description" type="text" id="product-desc-1" placeholder="Brief description of your product" aria-label="Product 1 description">
+                        </div>
+
+                        <fieldset class="mb-4">
+                            <legend class="text-black form-label">Subscription Types:</legend>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="payg" id="payg">
+                                <label class="form-check-label text-black" for="payg">Pay-as-you-go</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="free_tier" id="free_tier">
+                                <label class="form-check-label text-black" for="free_tier">Free Tier</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="tiered_pricing" id="tiered_pricing">
+                                <label class="form-check-label text-black" for="tiered_pricing">Tiered Pricing</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="weekly_sub" id="weekly_sub">
+                                <label class="form-check-label text-black" for="weekly_sub">Weekly Subscription</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="monthly_sub" id="monthly_sub">
+                                <label class="form-check-label text-black" for="monthly_sub">Monthly Subscription</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input subscription-checkbox" type="checkbox" value="yearly_sub" id="yearly_sub">
+                                <label class="form-check-label text-black" for="yearly_sub">Annual Subscription</label>
+                            </div>
+                        </fieldset>
+
+                        <div class="mb-3">
+                            <label class="form-label text-black" for="product-price-1">Pricing:</label>
+                            <input class="form-control product_price" type="text" id="product-price-1" placeholder="e.g., $10, $25/month" aria-label="Product price">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-black" for="price-range-1">Price Range:</label>
+                            <div class="price-display">
+                                <span>$0</span>
+                                <span>$5000</span>
+                            </div>
+                            <input class="form-range price_range" type="range" id="price-range-1" min="0" max="5000" step="20" value="0" aria-label="Price range slider">
+                        </div>
+
+                        <fieldset class="mb-4">
+                            <legend class="text-black form-label">Industries:</legend>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="marketing" id="marketing">
+                                <label class="form-check-label text-black" for="marketing">Marketing</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="sales" id="sales">
+                                <label class="form-check-label text-black" for="sales">Sales & CRM</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="analytics" id="analytics">
+                                <label class="form-check-label text-black" for="analytics">Analytics</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="cyber_security" id="cyber_security">
+                                <label class="form-check-label text-black" for="cyber_security">Cybersecurity</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="financial" id="financial">
+                                <label class="form-check-label text-black" for="financial">Financial Tech</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="HR" id="hr">
+                                <label class="form-check-label text-black" for="hr">HR</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="collab_tools" id="collab_tools">
+                                <label class="form-check-label text-black" for="collab_tools">Collaborative Tools</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input industries-checkbox" type="checkbox" value="other_selection" id="other_selection">
+                                <label class="form-check-label text-black" for="other_selection">Other</label>
+                            </div>
+                        </fieldset>
                     </div>
 
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "monthly_sub" value = "monthly_sub">
-                        <label class = "text-center text-black form-check-label">Monthly Subscription</label>
-                    </div>
-
-                    <div class = "form-check">
-                        <input class = "form-check-input subscription-checkbox" type = "checkbox" name = "yearly_sub" value = "yearly_sub">
-                        <label class = "text-center text-black form-check-label">Annual Subscription</label>
-                    </div>
-
-                    
-                    <label class = "text-center text-black form-label">Prices: </label>
-                    <input class = "form-control product_price" type = "text">
-
-                    <label class = "text-center text-black form-label">Price Range: </label>
-                    <div class = "justify-content-between d-flex">
-                        <span>0</span>
-                        <span>5000</span>
-                    </div>
-                    <input class = "form-range price_range" type = "range" min = "0" max = "5000" step="50" value="0">
-
-                    
-                    <label class = "text-center text-black form-check-label mb-2">Industries: </label>
-
-                        <div class = "form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "marketing" value = "marketing">
-                            <label class = "text-center text-black form-check-label">Marketing</label>
-                        </div>
-                     
-                        <div class = "form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "sales" value = "sales">
-                            <label class = "text-center text-black">Sales & CRM</label>
-                        </div>
-
-                        <div class = "form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "analytics" value = "analytics">
-                            <label class = "text-center text-black form-check-label">Analytics</label>
-                        </div>
-
-                        <div class = "form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "cyber_security" value = "cyber_security">
-                            <label class = "text-center text-black form-check-label">Cybersecurity</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "financial" value = "financial">
-                            <label class = "text-center text-black form-check-label">Financial Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "HR" value = "HR">
-                            <label class = "text-center text-black form-check-label">HR</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "collab_tools" value = "collab_tools">
-                            <label class = "text-center text-black form-check-label">Collaborative Tools</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input industries-checkbox" type = "checkbox" name = "other_selection" value = "other_selection">
-                            <label class = "text-center text-black form-check-label">Other</label>
-                        </div>
-                        </div>
-
-                        <button class = "form-control mb-2 mt-4" id = "add_product">+</button>
-
-
+                    <button class="btn btn-primary w-100" id="add_product" aria-label="Add another product">+ Add Product</button>
+                </div>
+            </div>
+        </section>
 
 
                 </div>
             </div>
-        </div>
-    </div>
-    <br><br>
-    <div class = "container">
-        <div class = "row justify-content-center">
-            <div id = "competitor_div" class = " col-md-8 bg-success text-center rounded p-4">
-                <h4 class = "text-center text-black"> SaaS Market Competitors</h4>
-                <div>
-                    <div class =  "individual-competitor">
-                    <p class = "text-center text-black competitor-header">Competitor</p3>
-                    <br><br>
+        </section>
 
-                    <p4 class = "text-center text-black">For each option below, select all that apply to your market competitors</p4>
+        <!-- Competitors Section -->
+        <section id="competitors-section" class="container mt-4" role="region" aria-labelledby="competitor-section-header">
+            <div class="row justify-content-center">
+                <div id="competitor_div" class="col-md-8 bg-success text-center rounded p-4" role="group" aria-labelledby="competitor-section-header">
+                    <h2 id="competitor-section-header" class="text-black text-center mb-4">Section 4: SaaS Market Competitors</h2>
+                    <p class="section-description text-black">Document competitors in your market. For each competitor, enter one product example.</p>
 
-                    <br><br>
+                    <div class="individual-competitor">
+                        <h3 class="competitor-header text-black">Competitor 1</h3>
 
-                    <label class = "text-center text-black form-label"> Competitor Name:  </label>
-                    <input class = "form-control mb-2 competitor-name" type = "text">
-                    
-                    <label class = "text-center text-black mb-2">Competitor Market Position: </label>
-                    <select name = "position" class = "form-select position">
-                        <option value = "new_entrant">New Entrant</option>
-                        <option value = "niche">Small/Niche</option>
-                        <option value = "established">Established</option>
-                        <option value  = "market_leader">Market Leader</option>
-                        <option value = "unknown">Unknown</option>
-                    </select>
-
-                    <label class = "text-center text-black mb-2">Links/Sources: </label>
-                    <input class = "form-control mb-2 link-source" type = "url">
-                
-                    <div class = "individual-product">
-                    <p class = "text-center text-black competitor-product-header">Product</p>
-                    <label class = "text-center text-black mb-2">Product name: </label>
-                    <input class = "form-control mb-2 product-name" type = "text">
-
-                    <label class = "text-center text-black mb-2">Target Audience: </label>
-                    <input class = "form-control mb-2 target-audience" type = "text">
-
-
-                    <label class = "text-center text-black mb-2">Product Categories</label>
-                    <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "product_marketing" value = "product_marketing">
-                            <label class = "text-center text-black form-check-label">Marketing</label>
-                        </div>
-                     
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "sales_crm" value = "sales_crm">
-                            <label class = "text-center text-black">Sales & CRM</label>
-                        </div>
-                        
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "e_commerce" value = "e_commerce">
-                            <label class = "text-center text-black">E-Commerce</label>
+                        <div class="mb-3">
+                            <label class="form-label text-black" for="comp-name-1">Competitor Name: </label>
+                            <input class="form-control competitor-name" type="text" id="comp-name-1" placeholder="Enter company name" aria-label="Competitor 1 name" required>
                         </div>
 
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "dev_tools" value = "dev_tools">
-                            <label class = "text-center text-black form-check-label">Developer Tools</label>
+                        <div class="mb-3">
+                            <label class="form-label text-black" for="market-pos-1">Market Position:</label>
+                            <select class="form-select position" id="market-pos-1" aria-label="Competitor market position">
+                                <option value="">Select market position</option>
+                                <option value="new_entrant">New Entrant</option>
+                                <option value="niche">Small/Niche</option>
+                                <option value="established">Established</option>
+                                <option value="market_leader">Market Leader</option>
+                                <option value="unknown">Unknown</option>
+                            </select>
                         </div>
 
-
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "analytics_tools" value = "analytical_tools">
-                            <label class = "text-center text-black form-check-label">Analytics</label>
+                        <div class="mb-4">
+                            <label class="form-label text-black" for="comp-source-1">Links/Sources:</label>
+                            <input class="form-control link-source" type="url" id="comp-source-1" placeholder="https://example.com" aria-label="Competitor source link">
                         </div>
 
-                        <div class = "form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "security" value = "security">
-                            <label class = "text-center text-black form-check-label">Cybersecurity</label>
+                        <!-- Competitor Product -->
+                        <div class="individual-product">
+                            <h4 class="competitor-product-header text-black">Product Information</h4>
+
+                            <div class="mb-3">
+                                <label class="form-label text-black" for="comp-prod-name-1">Product Name:</label>
+                                <input class="form-control product-name" type="text" id="comp-prod-name-1" placeholder="Enter product name" aria-label="Product name">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-black" for="comp-target-1">Target Audience:</label>
+                                <input class="form-control target-audience" type="text" id="comp-target-1" placeholder="Who uses this product?" aria-label="Target audience">
+                            </div>
+
+                            <fieldset class="mb-4">
+                                <legend class="text-black form-label">Product Categories:</legend>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="product_marketing" id="comp-marketing">
+                                    <label class="form-check-label text-black" for="comp-marketing">Marketing</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="sales_crm" id="comp-sales">
+                                    <label class="form-check-label text-black" for="comp-sales">Sales & CRM</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="e_commerce" id="comp-ecommerce">
+                                    <label class="form-check-label text-black" for="comp-ecommerce">E-Commerce</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="dev_tools" id="comp-devtools">
+                                    <label class="form-check-label text-black" for="comp-devtools">Developer Tools</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="analytical_tools" id="comp-analytics">
+                                    <label class="form-check-label text-black" for="comp-analytics">Analytics</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="security" id="comp-security">
+                                    <label class="form-check-label text-black" for="comp-security">Cybersecurity</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="FinTech" id="comp-fintech">
+                                    <label class="form-check-label text-black" for="comp-fintech">Financial Tech</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="EdTech" id="comp-edtech">
+                                    <label class="form-check-label text-black" for="comp-edtech">Educational Tech</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="health" id="comp-health">
+                                    <label class="form-check-label text-black" for="comp-health">Health Tech</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="hr" id="comp-hr">
+                                    <label class="form-check-label text-black" for="comp-hr">HR</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="collab_tools" id="comp-collab">
+                                    <label class="form-check-label text-black" for="comp-collab">Collaborative Tools</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="ai_tools" id="comp-ai">
+                                    <label class="form-check-label text-black" for="comp-ai">AI Tools</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="customer_support" id="comp-support">
+                                    <label class="form-check-label text-black" for="comp-support">Customer Support</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="project_management" id="comp-project">
+                                    <label class="form-check-label text-black" for="comp-project">Project Management</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input categories-checkbox" type="checkbox" value="other" id="comp-other">
+                                    <label class="form-check-label text-black" for="comp-other">Other</label>
+                                </div>
+                            </fieldset>
+
+                            <div class="mb-4">
+                                <label class="form-label text-black" for="comp-price-range-1">Price Range (Estimated):</label>
+                                <div class="price-display">
+                                    <span>$0</span>
+                                    <span>$5000</span>
+                                </div>
+                                <input class="form-range price_range" type="range" id="comp-price-range-1" min="0" max="5000" step="50" value="0" aria-label="Competitor price range">
+                            </div>
+
+                            <button class="btn btn-secondary w-100 add_product" aria-label="Add another product for this competitor">+ Add Product</button>
                         </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "FinTech" value = "FinTech">
-                            <label class = "text-center text-black form-check-label">Financial Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "edTech" value = "EdTech">
-                            <label class = "text-center text-black form-check-label">Educational Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "health" value = "health">
-                            <label class = "text-center text-black form-check-label">Health Tech</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "hr" value = "hr">
-                            <label class = "text-center text-black form-check-label">HR</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "collab_tools" value = "collab_tools">
-                            <label class = "text-center text-black form-check-label">Collaborative Tools</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "ai_tools" value = "ai_tools">
-                            <label class = "text-center text-black form-check-label">AI Tools</label>
-                        </div>
-
-                        
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "customer_support" value = "customer_support">
-                            <label class = "text-center text-black form-check-label">Customer Support</label>
-                        </div>
-
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "project_management" value = "project_management">
-                            <label class = "text-center text-black form-check-label">Project Management</label>
-                        </div>
-
-
-                        <div class="form-check">
-                            <input class = "form-check-input categories-checkbox" type = "checkbox" name = "other" value = "other">
-                            <label class = "text-center text-black form-check-label">Other</label>
-                        </div>
-                        
-
-                    
-
-                        <label class = "text-center text-black form-label">Price Range(Estimated): </label>
-                        <div class = "justify-content-between d-flex">
-                            <span>0</span>
-                            <span>5000</span>
-                        </div>
-                        <input class = "form-range price_range" type = "range" min = "0" max = "5000" step="50" value="0">
-                        <button class = "form-control mb-2 mt-4 add_product" id = "add_product">Add Product</button>
                     </div>
-                </div>
 
-                    <button class = "form-control mb-2 mt-4" id = "add_competitor">Add Competitor</button>
+                    <button class="btn btn-primary w-100" id="add_competitor" aria-label="Add another competitor">+ Add Competitor</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Submit Button -->
+        <div class="container mt-5 mb-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <button class="btn btn-success btn-lg px-5" id="update_button">Save Changes</button>
                 </div>
             </div>
         </div>
-    </div>
-    <br><br>
-    <div class = "text-center">
-    <button class = "bg-success text-white p-1 rounded" id = "update_button">Submit</button>
-    </div>
+    </main>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src = "profile.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="profile.js"></script>
 </body>
 </html>
+

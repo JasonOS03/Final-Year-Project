@@ -1,9 +1,21 @@
 /* GLOBAL -------------------------------------------------- */
-
 body {
     background-color: #f8f9fa;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 2rem 1rem;
+    color: #212529;
 }
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+p {
+    color: #444;
+    margin-bottom: 0.5rem;
+}
+
 
 /* NAVBAR -------------------------------------------------- */
 
@@ -170,7 +182,6 @@ input:focus {
 }
 
 .view-competitor {
-    background-color: #ffc107 !important;
     border: none;
     padding: 0.6rem 1.2rem;
     font-weight: 600;
@@ -181,5 +192,21 @@ input:focus {
 
 .view-competitor:hover {
     background-color: #e0a800 !important;
+}
+
+.regenerate-recommendations {
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-top: 1rem;
+    color: white;
+    transition: background-color 0.2s ease;
+}
+
+.regenerate-recommendations:hover,
+.regenerate-recommendations:focus {
+    background-color: #0aa2c0 !important;
+    color: white;
 }
 
