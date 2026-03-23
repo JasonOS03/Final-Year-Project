@@ -7,16 +7,51 @@ const app = express();
 const couch_database = nano(process.env.COUCHDB_URL);
 const sessions = require("express-session");
 const couch_store = require("connect-couchdb")(sessions);
+const is_production = process.env.NODE_ENV === "production";
+const default_origins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://generatesaas.netlify.app"
+];
+const allowed_origins = [
+  ...new Set(
+    default_origins.concat(
+      (process.env.FRONTEND_ORIGIN || "")
+        .split(",")
+        .map(origin => origin.trim())
+        .filter(Boolean)
+    )
+  )
+];
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
 app.use(cookieparser());
+app.set("trust proxy", 1);
+
+app.use((request, response, next) => {
+    const origin = request.headers.origin;
+
+    if (origin && allowed_origins.includes(origin)) {
+        response.header("Access-Control-Allow-Origin", origin);
+        response.header("Vary", "Origin");
+        response.header("Access-Control-Allow-Credentials", "true");
+        response.header("Access-Control-Allow-Headers", "Content-Type");
+        response.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    }
+
+    if (request.method === "OPTIONS") {
+        return response.sendStatus(204);
+    }
+
+    next();
+});
 
     const couchUrl = new URL(process.env.COUCHDB_URL);
 
 app.use(
   sessions({
-    secret: "the-secret-key",
+    secret: process.env.SESSION_SECRET || "the-secret-key",
     saveUninitialized: false,
     resave: false,
     store: new couch_store({
@@ -27,9 +62,17 @@ app.use(
       username: couchUrl.username,
       password: couchUrl.password
     }),
-    cookie: { secure: false }
+    cookie: {
+      secure: is_production,
+      sameSite: is_production ? "none" : "lax",
+      httpOnly: true
+    }
   })
 );
+
+    app.get("/health", (request, response) => {
+        return response.json({ ok: true });
+    });
 
 
     app.use(express.static("public"));
@@ -1035,8 +1078,49 @@ app.post("/update_profile",async (request,response) =>{
        
          async function call_api(prompt)
         {
-                // post the user prompt to the OpenRouter API
-                const resp = await fetch("http://localhost:11434/api/generate", {
+                const huggingface_token = process.env.HF_TOKEN;
+
+                if (huggingface_token) {
+                    const huggingface_model = process.env.HF_MODEL || "mistralai/Mistral-7B-Instruct-v0.3";
+                    const resp = await fetch(`https://api-inference.huggingface.co/models/${huggingface_model}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${huggingface_token}`
+                        },
+                        body: JSON.stringify({
+                            inputs: prompt,
+                            parameters: {
+                                return_full_text: false,
+                                max_new_tokens: 700,
+                                temperature: 0.4
+                            }
+                        })
+                    });
+
+                    console.log("Hugging Face response status:", resp.status);
+
+                    if (!resp.ok) {
+                        const error_text = await resp.text();
+                        console.error("Hugging Face API error:", error_text);
+                        throw new Error(error_text);
+                    }
+
+                    const result = await resp.json();
+                    const generated_text = Array.isArray(result)
+                        ? result[0]?.generated_text
+                        : result?.generated_text;
+
+                    if (!generated_text) {
+                        console.error("Unexpected Hugging Face result:", result);
+                        throw new Error("No generated text returned from Hugging Face");
+                    }
+
+                    return { response: generated_text };
+                }
+
+                const ollama_url = process.env.OLLAMA_URL || "http://localhost:11434";
+                const resp = await fetch(`${ollama_url}/api/generate`, {
                     method: "POST",
                     headers: {
                     "Content-Type": "application/json"  
@@ -1046,8 +1130,7 @@ app.post("/update_profile",async (request,response) =>{
                         model: "llama3",
                         prompt: prompt,
                         stream: false
-                        // indicates the AI model used
-                }) // sets a maximum token limit 
+                })
 
             });
             console.log("Ollama response status:", resp.status);
@@ -1059,15 +1142,15 @@ app.post("/update_profile",async (request,response) =>{
             throw new Error(error_text);
             }
 
-            // asynchronously wait for the JSON response
             const result = await resp.json();
             console.log("Ollama result: ",result);
             return result;
         }
          if(require.main === module){
-        app.listen(3000, ()=>
+        const port = process.env.PORT || 3000;
+        app.listen(port, ()=>
         {
-            console.log("listening on port 3000")
+            console.log(`listening on port ${port}`)
         }
         );
     }

@@ -2,8 +2,10 @@
   "name": "final-year-project",
   "version": "1.0.0",
   "description": "FYP Package",
-  "main": "homepage.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
     "test": "hello world"
   },
   "repository": {
