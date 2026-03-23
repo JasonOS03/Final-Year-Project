@@ -48,26 +48,30 @@ app.use((request, response, next) => {
 });
 
     const couchUrl = new URL(process.env.COUCHDB_URL);
+    const session_config = {
+      secret: process.env.SESSION_SECRET || "the-secret-key",
+      saveUninitialized: false,
+      resave: false,
+      cookie: {
+        secure: is_production,
+        sameSite: is_production ? "none" : "lax",
+        httpOnly: true
+      }
+    };
+
+    if (!is_production) {
+      session_config.store = new couch_store({
+        name: "sessions",
+        host: couchUrl.hostname,
+        port: couchUrl.port || 5984,
+        protocol: couchUrl.protocol.replace(":", ""),
+        username: couchUrl.username,
+        password: couchUrl.password
+      });
+    }
 
 app.use(
-  sessions({
-    secret: process.env.SESSION_SECRET || "the-secret-key",
-    saveUninitialized: false,
-    resave: false,
-    store: new couch_store({
-      name: "sessions",
-      host: couchUrl.hostname,
-      port: couchUrl.port || 5984,
-      protocol: couchUrl.protocol.replace(":", ""),
-      username: couchUrl.username,
-      password: couchUrl.password
-    }),
-    cookie: {
-      secure: is_production,
-      sameSite: is_production ? "none" : "lax",
-      httpOnly: true
-    }
-  })
+  sessions(session_config)
 );
 
     app.get("/health", (request, response) => {
