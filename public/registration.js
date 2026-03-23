@@ -5,7 +5,20 @@ const add_ideas_button = document.getElementById("add_ideas_button");
 const add_products_button =  document.getElementById("add_product");
 const register_button = document.getElementById("register_button");
 
+function attach_slider_value(slider)
+{
+    const slider_value = slider.parentElement.querySelector(".slider-value");
+    if (!slider_value) {
+        return;
+    }
+    const update_slider_value = () => {
+        slider_value.textContent = `Current value: ${slider.value}`;
+    };
+    update_slider_value();
+    slider.addEventListener("input", update_slider_value);
+}
 
+document.querySelectorAll(".price_range").forEach(attach_slider_value);
 
 function validate_username()
 {
@@ -73,6 +86,11 @@ add_products_button.addEventListener("click",()=>{
             input.checked = false;
         }
     });
+    const slider = duplicate.querySelector(".price_range");
+    if (slider) {
+        slider.value = slider.min || "0";
+        attach_slider_value(slider);
+    }
 
     product_portfolio.appendChild(duplicate);
 
@@ -92,6 +110,11 @@ add_competitor.addEventListener("click", () => {
         if (input.type === "text") input.value = "";
         if (input.type === "checkbox") input.checked = false;
     });
+    const slider = clone.querySelector(".price_range");
+    if (slider) {
+        slider.value = slider.min || "0";
+        attach_slider_value(slider);
+    }
 
     document.querySelector("#competitor_div").appendChild(clone);
 });
@@ -107,6 +130,11 @@ document.addEventListener("click", e => {
             if (input.type === "text") input.value = "";
             if (input.type === "checkbox") input.checked = false;
         });
+        const slider = clone.querySelector(".price_range");
+        if (slider) {
+            slider.value = slider.min || "0";
+            attach_slider_value(slider);
+        }
 
         comp.appendChild(clone);
     }

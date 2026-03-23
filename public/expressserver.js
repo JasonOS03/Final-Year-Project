@@ -33,11 +33,6 @@ app.use(
 
 
     app.use(express.static("public"));
-
-    console.log("COUCHDB_URL:", process.env.COUCHDB_URL);
-    
-
-
     app.post("/user_login", async (request,response) => {
         
         try
@@ -94,21 +89,23 @@ app.use(
             }
             
             // Fetch user's current ideas and products
-            const ideas_query = await the_database.find({
+            const [ideas_query, products_query] = await Promise.all([
+            the_database.find({
                 selector: {
                     username: username,
                     ideas: {$exists: true}
                 },
                 fields: ["ideas"]
-            });
+            }),
             
-            const products_query = await the_database.find({
+            the_database.find({
                 selector: {
                     username: username,
                     products: {$exists: true}
                 },
                 fields: ["products"]
-            });
+            })
+        ]);
             
             const ideas = ideas_query.docs[0]?.ideas || [];
             const products = products_query.docs[0]?.products || [];
@@ -463,7 +460,8 @@ RULES:
 
         user = user.trim();
         console.log("SESSION USER:", JSON.stringify(user));
-        const ideas_query = await the_database.find({
+        const[ideas_query,product_query,personal_details_query,competitors_query] =  await Promise.all([
+        the_database.find({
           selector:
           {
                  username : user,
@@ -475,8 +473,8 @@ RULES:
                 "ideas",
                 "username"
           ]
-        });
-        const product_query = await the_database.find({
+        }),
+        the_database.find({
             selector:
           {
                  username : user,
@@ -488,9 +486,9 @@ RULES:
                 "products",
                 "username"
           ]
-        });
+        }),
 
-        const personal_details_query = await the_database.find({
+        the_database.find({
             selector:
             {
                 username: user,
@@ -503,8 +501,8 @@ RULES:
                 "password",
                 "email"
             ]
-        });
-        const competitors_query = await the_database.find({
+        }),
+        the_database.find({
           selector:
           {
                  username : user,
@@ -516,7 +514,8 @@ RULES:
                 "user_entered_competitors",
                 "username"
           ]
-        });
+        })
+    ]);
         
         // Find documents that actually have the ideas, products, and competitors fields
         const ideas_document = ideas_query.docs.find(d => d.ideas && Array.isArray(d.ideas));
