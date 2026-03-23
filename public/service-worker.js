@@ -1,4 +1,4 @@
-const CACHE_NAME = "gensaas-v1";
+const CACHE_NAME = "gensaas-v2";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -17,6 +17,7 @@ const APP_SHELL = [
   "/profile.css",
   "/profile.js",
   "/logout.html",
+  "/logout.css",
   "/logout.js",
   "/manifest.json",
   "/user_profile.png",
@@ -43,6 +44,19 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then(cachedResponse => cachedResponse || caches.match("/index.html")))
+    );
     return;
   }
 
