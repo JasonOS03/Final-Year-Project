@@ -11,7 +11,8 @@ const is_production = process.env.NODE_ENV === "production";
 const default_origins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-  "https://generatesaas.netlify.app"
+  "https://generatesaas.netlify.app",
+  "https://www.generatesaas.netlify.app"
 ];
 const allowed_origins = [
   ...new Set(
@@ -29,7 +30,7 @@ const the_database = couch_database.db.use('final_year_project');
 app.use(cookieparser());
 app.set("trust proxy", 1);
 
-app.use((request, response, next) => {
+function apply_cors_headers(request, response) {
     const origin = request.headers.origin;
 
     if (origin && allowed_origins.includes(origin)) {
@@ -38,13 +39,23 @@ app.use((request, response, next) => {
         response.header("Access-Control-Allow-Credentials", "true");
         response.header("Access-Control-Allow-Headers", "Content-Type");
         response.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        response.header("Access-Control-Max-Age", "86400");
     }
+}
+
+app.use((request, response, next) => {
+    apply_cors_headers(request, response);
 
     if (request.method === "OPTIONS") {
-        return response.sendStatus(204);
+        return response.status(204).end();
     }
 
     next();
+});
+
+app.options(/.*/, (request, response) => {
+    apply_cors_headers(request, response);
+    return response.status(204).end();
 });
 
     const couchUrl = new URL(process.env.COUCHDB_URL);
