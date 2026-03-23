@@ -8,6 +8,9 @@ login_submit.addEventListener("click" ,async (e)=> {
     e.preventDefault();
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    const original_button_text = login_submit.textContent;
+    login_submit.disabled = true;
+    login_submit.textContent = "Signing in...";
     const spinner = create_spinner();
     const span = spinner.querySelector("span");
     span.textContent = "Verifying your credentials...";
@@ -35,6 +38,7 @@ login_submit.addEventListener("click" ,async (e)=> {
          
          if(resp.success)
         {
+         window.showActionStatus("Login successful. Redirecting...", "success");
          login_form.innerHTML = "Correct credentials entered, redirecting to homepage";
         setTimeout(()=>{
            window.location.href = "homepage.html" 
@@ -44,6 +48,9 @@ login_submit.addEventListener("click" ,async (e)=> {
         else
         {
             error_message.innerHTML = "password or username does not match, try again";
+            window.showActionStatus("Incorrect username or password.", "error");
+            login_submit.disabled = false;
+            login_submit.textContent = original_button_text;
         }
 
     }
@@ -51,6 +58,9 @@ login_submit.addEventListener("click" ,async (e)=> {
         console.log("failed to fetch user details");
         spinner.remove();
         error_message.innerHTML = "An error occurred during login, please try again";
+        window.showActionStatus("An error occurred during login.", "error");
+        login_submit.disabled = false;
+        login_submit.textContent = original_button_text;
     }
 
 })

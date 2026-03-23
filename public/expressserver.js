@@ -3,94 +3,47 @@ const fetch = require("node-fetch");
 const cookieparser = require('cookie-parser');
 require("dotenv").config();
 const nano = require("nano");
+const bcrypt = require("bcryptjs");
 const app = express();
 const couch_database = nano(process.env.COUCHDB_URL);
 const sessions = require("express-session");
 const couch_store = require("connect-couchdb")(sessions);
-const is_production = process.env.NODE_ENV === "production";
-const default_origins = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "https://generatesaas.netlify.app",
-  "https://www.generatesaas.netlify.app"
-];
-const allowed_origins = [
-  ...new Set(
-    default_origins.concat(
-      (process.env.FRONTEND_ORIGIN || "")
-        .split(",")
-        .map(origin => origin.trim())
-        .filter(Boolean)
-    )
-  )
-];
+const {
+    buildRecommendationsPrompt,
+    buildRecommendationsRetryPrompt,
+    buildFullSummaryPrompt,
+    buildInsightsPrompt,
+    buildCompetitorPrompt
+} = require("./promptTemplates");
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project');
 app.use(cookieparser());
-app.set("trust proxy", 1);
-
-function apply_cors_headers(request, response) {
-    const origin = request.headers.origin;
-
-    if (origin && allowed_origins.includes(origin)) {
-        response.header("Access-Control-Allow-Origin", origin);
-        response.header("Vary", "Origin");
-        response.header("Access-Control-Allow-Credentials", "true");
-        response.header("Access-Control-Allow-Headers", "Content-Type");
-        response.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-        response.header("Access-Control-Max-Age", "86400");
-    }
-}
-
-app.use((request, response, next) => {
-    apply_cors_headers(request, response);
-
-    if (request.method === "OPTIONS") {
-        return response.status(204).end();
-    }
-
-    next();
-});
-
-app.options(/.*/, (request, response) => {
-    apply_cors_headers(request, response);
-    return response.status(204).end();
-});
 
     const couchUrl = new URL(process.env.COUCHDB_URL);
-    const session_config = {
-      secret: process.env.SESSION_SECRET || "the-secret-key",
-      saveUninitialized: false,
-      resave: false,
-      cookie: {
-        secure: is_production,
-        sameSite: is_production ? "none" : "lax",
-        httpOnly: true
-      }
-    };
-
-    if (!is_production) {
-      session_config.store = new couch_store({
-        name: "sessions",
-        host: couchUrl.hostname,
-        port: couchUrl.port || 5984,
-        protocol: couchUrl.protocol.replace(":", ""),
-        username: couchUrl.username,
-        password: couchUrl.password
-      });
-    }
 
 app.use(
-  sessions(session_config)
+  sessions({
+    secret: "the-secret-key",
+    saveUninitialized: false,
+    resave: false,
+    store: new couch_store({
+      name: "sessions",
+      host: couchUrl.hostname,
+      port: couchUrl.port || 5984,
+      protocol: couchUrl.protocol.replace(":", ""),
+      username: couchUrl.username,
+      password: couchUrl.password
+    }),
+    cookie: { secure: false }
+  })
 );
-
-    app.get("/health", (request, response) => {
-        return response.json({ ok: true });
-    });
 
 
     app.use(express.static("public"));
+
+    
+
     app.post("/user_login", async (request,response) => {
         
         try
@@ -98,14 +51,27 @@ app.use(
             const match = await the_database.find
             ({
             selector: {
-            
                 username:request.body.username,
-                password:request.body.password
-            
-            }});
+                password: {"$exists": true}
+            },
+            fields: ["_id", "_rev", "username", "password"]});
             if(!match.docs || match.docs.length === 0)
             {
                 return response.json({success:false,message:"no matching username and password found"});
+            }
+            const user_document = match.docs[0];
+            const stored_password = user_document.password || "";
+            const valid_password = stored_password.startsWith("$2")
+                ? await bcrypt.compare(request.body.password, stored_password)
+                : stored_password === request.body.password;
+            if (!valid_password)
+            {
+                return response.json({success:false,message:"no matching username and password found"});
+            }
+            if (!stored_password.startsWith("$2"))
+            {
+                user_document.password = await bcrypt.hash(request.body.password, 10);
+                await the_database.insert(user_document);
             }
             request.session.username = request.body.username;
             return response.json({success:true , message:"found matching username and password"});
@@ -206,7 +172,8 @@ app.use(
         const email = request.body.email;
         try
         {
-            await the_database.insert({username:username,password:password,email:email});
+            const hashed_password = await bcrypt.hash(password, 10);
+            await the_database.insert({_id: username + "_profile",username:username,password:hashed_password,email:email});
             console.log("Inserted user's personal details into the database");
             response.json({success: true, message: "data saved successfully"})
         }
@@ -223,7 +190,7 @@ app.use(
         const username = request.body.username;
         try
         {
-            await the_database.insert({username:username,ideas:ideas});
+            await the_database.insert({_id: username + "_ideas",username:username,ideas:ideas});
             console.log("Inserted user's idea list into the database");
             response.json({success: true, message: "data saved successfully"})
         }
@@ -240,7 +207,7 @@ app.use(
         const username = request.body.username;
         try
         {
-            await the_database.insert({username:username,products:products});
+            await the_database.insert({_id: username + "_products",username:username,products:products});
             console.log("Inserted user's product portfolio into the database");
             response.json({success: true, message: "data saved successfully"})
         }
@@ -256,7 +223,7 @@ app.use(
             const username = request.body.username;
             try
             {
-            await the_database.insert({username:username,user_entered_competitors:competitors});
+            await the_database.insert({_id: username + "_competitors",username:username,user_entered_competitors:competitors});
             console.log("Inserted user's competitor details into the database");
             response.json({success: true, message: "data saved successfully"})
             }
@@ -274,36 +241,9 @@ app.use(
                 const products = request.body.products;
                 const ideas = request.body.ideas;
 
-                const the_products = JSON.stringify(products);
-                const the_ideas = JSON.stringify(ideas);
-
-
-                const api_prompt  = `For this SaaS startup, generate exactly 3 distinct product/service ideas based on this portfolio: ${the_products} and these ideas: ${the_ideas}
-                Output exactly:
-                1. idea 1 here
-                2. idea 2 here
-                3. idea 3 here
-                Rules:
-                1. No intro, summary, or conclusion
-                2. Exactly three unique ideas
-                3. No text between ideas
-                4. No markdown
-                5. Do not combine ideas
-                6. No extra text before or after the list`;
-
-
-                const result = await call_api(api_prompt);
-            // parse the response and extract the text content
-
-            const message = result?.response?.trim() || "";
-
-            const regex = /\n\s*(?=\d+\.\s)/;
-            const three_parts = message.split(regex);
-            let parts_array = three_parts
-                .map(p => p.trim())
-                .filter(p => /^\d+\.\s/.test(p))
-                .filter(p => p.length > 0)
-                .slice(0, 3);
+                const api_prompt = buildRecommendationsPrompt(ideas, products, 3);
+                const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, 3);
+                const parts_array = await generate_ranked_recommendations(ideas, products, 3, api_prompt, retry_prompt);
 
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
@@ -432,31 +372,7 @@ app.use(
                 }
           
 
-              const full_summary_prompt =
-`Expand this SaaS product/service idea.
-
-Product/service Idea:
-${summary}
-
-Output EXACTLY:
-1. Expanded Idea: <text>
-Market Conditions: <text>
-Potential Cost: <text>
-Size of Potential Market: <text>
-Uniqueness of Product Idea: <text>
-Overall Risk Grading: <low/medium/high>
-Sources: https://example1.com https://example2.com
-
-RULES:
-- Do NOT add any text before "1." or after the final "Sources:" line.
-- Do NOT use markdown formatting.
-- "Overall Risk Grading" must be low, medium or high.
-- Sources MUST contain at least 2 real, reputable URLs related to the product idea or market
-- Always include valid sources.
-- Sources must be on a single line separated by spaces
-- Do NOT change the heading names.
-- Do NOT add blank lines anywhere.
-`;
+              const full_summary_prompt = buildFullSummaryPrompt(summary);
 
 
                 // post the user prompt to the Ollama API
@@ -518,6 +434,21 @@ RULES:
 
         user = user.trim();
         console.log("SESSION USER:", JSON.stringify(user));
+        const stable_profile = await the_database.get(user + "_profile").catch(() => null);
+        const stable_ideas = await the_database.get(user + "_ideas").catch(() => null);
+        const stable_products = await the_database.get(user + "_products").catch(() => null);
+        const stable_competitors = await the_database.get(user + "_competitors").catch(() => null);
+
+        if (stable_profile || stable_ideas || stable_products || stable_competitors) {
+            return response.json({
+                username: stable_profile?.username || "",
+                password: "",
+                email: stable_profile?.email || "",
+                ideas: stable_ideas?.ideas || [],
+                products: stable_products?.products || [],
+                user_entered_competitors: stable_competitors?.user_entered_competitors || stable_competitors?.competitors || []
+            });
+        }
         const[ideas_query,product_query,personal_details_query,competitors_query] =  await Promise.all([
         the_database.find({
           selector:
@@ -588,7 +519,7 @@ RULES:
 
 
         return response.json({username: personal_details_query.docs[0]?.username || "",
-            password: personal_details_query.docs[0]?.password || "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
+            password: "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
             products : products_document?.products || [],
             user_entered_competitors : compList})
     }
@@ -859,23 +790,7 @@ app.post("/update_profile",async (request,response) =>{
                 return insights_query.docs[0].insights;
             }
 
-            const insights_prompt =  `
-        Based on this SaaS product information:
-        ${product}
-        
-        Output exactly:
-        Strengths: <text>
-        Weaknesses: <text>
-        Sources: https://example1.com https://example2.com
-
-        Rules:
-        - Sources must be on the same line and include at least 2 real URLs
-        - Use real sources related to the product
-        - No text before or after these lines
-        - No markdown
-        - Do not change the headings
-        - No blank lines
-        `;
+            const insights_prompt = buildInsightsPrompt(product);
             const insights_data = await call_api(insights_prompt);
             const response_data = insights_data.response;
             await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data});
@@ -886,46 +801,7 @@ app.post("/update_profile",async (request,response) =>{
                 const the_products = JSON.stringify(products);
                 const the_ideas = JSON.stringify(ideas);
 
-                const competitor_data_prompt = `
-            Return only valid JSON in this structure:
-                   
-                {
-                        "competitors": [
-                        {
-                            "competitor_name": "string",
-                            "market_position": "string",
-                            "source": "string",
-                        "products": [
-                        {
-                        "product_name": "string",
-                        "product_price": "string",
-                        "market_share": "string",
-                        "items_sold": "string",
-                        "categories": ["string"]
-                        }
-                        ]
-                        }
-
-                    ]
-                }
-                    
-                    Based on:
-                     LLM recommendation summary: ${the_summaries.join("\n")} 
-                     user entered competitors (optional): ${JSON.stringify(competitors || [])}
-                     user ideas: ${ideas}
-                     user products: ${products} 
-
-                        Rules:
-                        1. Competitors must be real SaaS companies
-                        2. Return 3-5 competitors
-                        3. Return exactly one SaaS product for each competitor
-                        4. Market share must be a percentage
-                        5. No text outside the JSON
-                        6. Categories must match the user's selected product categories
-                        7. Source must be one link
-                        8. If user entered competitors are provided, use them for better relevance; otherwise infer competitors from the user's ideas and products
-                        
-                        `;
+                const competitor_data_prompt = buildCompetitorPrompt(the_summaries, competitors, ideas, products);
                 const competitor_data =  await call_api(competitor_data_prompt);
                return await parse_competitor_data(competitor_data);
 
@@ -993,27 +869,108 @@ app.post("/update_profile",async (request,response) =>{
                 .trim();
         }
 
+        function extract_signal_tokens(ideas = [], products = []) {
+            const raw_values = [
+                ...ideas,
+                ...products.flatMap(product => [
+                    product?.description,
+                    product?.prices,
+                    ...(product?.subscription_types || []),
+                    ...(product?.industries || [])
+                ])
+            ];
+
+            return Array.from(new Set(
+                raw_values
+                    .join(" ")
+                    .toLowerCase()
+                    .match(/[a-z][a-z0-9_+-]{3,}/g) || []
+            ));
+        }
+
+        function score_recommendation(text, ideas = [], products = []) {
+            const normalized_text = normalize_recommendation_text(text).toLowerCase();
+            if (!normalized_text) {
+                return -100;
+            }
+
+            const signal_tokens = extract_signal_tokens(ideas, products);
+            const matched_tokens = signal_tokens.filter(token => normalized_text.includes(token));
+            let score = matched_tokens.length * 3;
+
+            if (normalized_text.length >= 35) {
+                score += 2;
+            }
+            if (normalized_text.includes("subscription") || normalized_text.includes("pricing")) {
+                score += 1;
+            }
+            if (normalized_text.includes("dashboard") || normalized_text.includes("platform")) {
+                score -= 1;
+            }
+
+            return score;
+        }
+
+        function is_generic_recommendation(text, ideas = [], products = []) {
+            const normalized_text = normalize_recommendation_text(text).toLowerCase();
+            const generic_phrases = [
+                "ai-powered platform",
+                "saas platform",
+                "business management tool",
+                "productivity platform",
+                "marketplace for businesses"
+            ];
+
+            return (
+                !normalized_text ||
+                normalized_text.includes("undefined") ||
+                generic_phrases.some(phrase => normalized_text.includes(phrase)) ||
+                score_recommendation(normalized_text, ideas, products) < 3
+            );
+        }
+
+        function parse_recommendation_output(message, recommendation_count, ideas, products) {
+            const regex = /\n\s*(?=\d+\.\s)/;
+            const split_recomm = String(message || "").split(regex);
+            let formatted_recomm = split_recomm
+                .map(p => p.trim())
+                .filter(p => /^\d+\.\s/.test(p))
+                .map(normalize_recommendation_text);
+
+            if (formatted_recomm.length === 0) {
+                const fallback_recommendation = normalize_recommendation_text(message);
+                if (fallback_recommendation) {
+                    formatted_recomm = [fallback_recommendation];
+                }
+            }
+
+            return Array.from(new Set(formatted_recomm))
+                .filter(text => text.length > 0)
+                .filter(text => !is_generic_recommendation(text, ideas, products))
+                .sort((a, b) => score_recommendation(b, ideas, products) - score_recommendation(a, ideas, products))
+                .slice(0, recommendation_count);
+        }
+
+        async function generate_ranked_recommendations(ideas, products, recommendation_count, prompt, retry_prompt) {
+            const first_result = await call_api(prompt);
+            let best_recommendations = parse_recommendation_output(first_result?.response?.trim() || "", recommendation_count, ideas, products);
+
+            if (best_recommendations.length < recommendation_count) {
+                const retry_result = await call_api(retry_prompt);
+                const retry_recommendations = parse_recommendation_output(retry_result?.response?.trim() || "", recommendation_count, ideas, products);
+                best_recommendations = Array.from(new Set(best_recommendations.concat(retry_recommendations)))
+                    .sort((a, b) => score_recommendation(b, ideas, products) - score_recommendation(a, ideas, products))
+                    .slice(0, recommendation_count);
+            }
+
+            return best_recommendations;
+        }
+
         async function generate_new_recommendation(username,products,ideas,recommendation_count = 1, replace_existing = true){
              try {
 
-                const the_products = JSON.stringify(products);
-                const the_ideas = JSON.stringify(ideas);
-                const format_example = Array.from(
-                    { length: recommendation_count },
-                    (_, index) => `${index + 1}. idea ${index + 1} here`
-                ).join("\n                ");
-
-
-                const api_prompt  = `For this SaaS startup, generate exactly ${recommendation_count} distinct product/service ideas based on this portfolio: ${the_products} and these ideas: ${the_ideas}
-                Output exactly:
-                ${format_example}
-                Rules:
-                1. No intro, summary, or conclusion
-                2. Exactly ${recommendation_count} unique recommendations
-                3. No markdown
-                4. No extra text or blank lines before the numbered list
-                5. Each recommendation must be on its own numbered line
-                  `;
+                const api_prompt = buildRecommendationsPrompt(ideas, products, recommendation_count);
+                const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, recommendation_count);
                 
                 let next_recommendation_id = 0;
                 const existing_recomms = await the_database.find({
@@ -1040,27 +997,13 @@ app.post("/update_profile",async (request,response) =>{
                     next_recommendation_id = existing_ids.length > 0 ? Math.max(...existing_ids) + 1 : existing_recomms.docs.length;
                 }
                 
-                // post the user prompt to the Ollama API
-                const result = await call_api(api_prompt);
-            // parse the response and extract the text content
-
-            const message = result?.response?.trim() || ""; 
-
-            const regex = /\n\s*(?=\d+\.\s)/; 
-            const split_recomm = message.split(regex);
-            let formatted_recomm = split_recomm
-                .map(p => p.trim())
-                .filter(p => /^\d+\.\s/.test(p))
-                .map(normalize_recommendation_text)
-                .filter(p => p.length > 0)
-                .slice(0, recommendation_count);
-
-            if (formatted_recomm.length === 0) {
-                const fallback_recommendation = normalize_recommendation_text(message);
-                if (fallback_recommendation) {
-                    formatted_recomm = [fallback_recommendation];
-                }
-            }
+                const formatted_recomm = await generate_ranked_recommendations(
+                    ideas,
+                    products,
+                    recommendation_count,
+                    api_prompt,
+                    retry_prompt
+                );
             // insert the formatted response and the user prompt into the database
 
             for(let i = 0; i < formatted_recomm.length; i++)
@@ -1093,49 +1036,8 @@ app.post("/update_profile",async (request,response) =>{
        
          async function call_api(prompt)
         {
-                const huggingface_token = process.env.HF_TOKEN;
-
-                if (huggingface_token) {
-                    const huggingface_model = process.env.HF_MODEL || "mistralai/Mistral-7B-Instruct-v0.3";
-                    const resp = await fetch(`https://api-inference.huggingface.co/models/${huggingface_model}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${huggingface_token}`
-                        },
-                        body: JSON.stringify({
-                            inputs: prompt,
-                            parameters: {
-                                return_full_text: false,
-                                max_new_tokens: 700,
-                                temperature: 0.4
-                            }
-                        })
-                    });
-
-                    console.log("Hugging Face response status:", resp.status);
-
-                    if (!resp.ok) {
-                        const error_text = await resp.text();
-                        console.error("Hugging Face API error:", error_text);
-                        throw new Error(error_text);
-                    }
-
-                    const result = await resp.json();
-                    const generated_text = Array.isArray(result)
-                        ? result[0]?.generated_text
-                        : result?.generated_text;
-
-                    if (!generated_text) {
-                        console.error("Unexpected Hugging Face result:", result);
-                        throw new Error("No generated text returned from Hugging Face");
-                    }
-
-                    return { response: generated_text };
-                }
-
-                const ollama_url = process.env.OLLAMA_URL || "http://localhost:11434";
-                const resp = await fetch(`${ollama_url}/api/generate`, {
+                // post the user prompt to the OpenRouter API
+                const resp = await fetch("http://localhost:11434/api/generate", {
                     method: "POST",
                     headers: {
                     "Content-Type": "application/json"  
@@ -1145,7 +1047,8 @@ app.post("/update_profile",async (request,response) =>{
                         model: "llama3",
                         prompt: prompt,
                         stream: false
-                })
+                        // indicates the AI model used
+                }) // sets a maximum token limit 
 
             });
             console.log("Ollama response status:", resp.status);
@@ -1157,15 +1060,15 @@ app.post("/update_profile",async (request,response) =>{
             throw new Error(error_text);
             }
 
+            // asynchronously wait for the JSON response
             const result = await resp.json();
             console.log("Ollama result: ",result);
             return result;
         }
          if(require.main === module){
-        const port = process.env.PORT || 3000;
-        app.listen(port, ()=>
+        app.listen(3000, ()=>
         {
-            console.log(`listening on port ${port}`)
+            console.log("listening on port 3000")
         }
         );
     }

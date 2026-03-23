@@ -4,6 +4,7 @@ const register_button = document.getElementById("register_button");
 const right_arrow = document.getElementById("right_arrow");
 const left_arrow = document.getElementById("left_arrow");
 const carousel  = document.getElementById("carousel");
+const insights_cache = new Map();
 
 
 
@@ -101,8 +102,11 @@ try{
         let rate_recommendations_button;
         const container_height = container.offsetHeight;
         const container_width = container.offsetWidth;
+        const original_button_text = button.textContent;
 
         button.setAttribute("aria-expanded","true");
+        button.disabled = true;
+        button.textContent = "Loading...";
         button.style.display = "none";
 
         // expand the container by the width and height
@@ -138,8 +142,31 @@ try{
         spinner.classList.add("text-warning");
 
         await new Promise(requestAnimationFrame);
+        let progress_div = null;
+        let interval = null;
+        const remove_progress_bar = () => {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+            if (progress_div instanceof Node && progress_div.parentNode === container) {
+                container.removeChild(progress_div);
+            }
+        };
         try
         {
+            const [progress, div] = create_progress_bar();
+            progress_div = div;
+            container.appendChild(progress_div);
+            let percentage_value = 0;
+            interval = setInterval(()=>{
+                if(percentage_value < 95){
+                    percentage_value += Math.random() * 10;
+                    progress.style.width = percentage_value + "%";
+                }
+                
+            }, 200);
+
             const detailed_summary  =  await fetch("/retrieve_full_summary",
             {
                 method: "POST",
@@ -154,6 +181,8 @@ try{
                     summary:response.dataset.summary
                 })
             })
+            clearInterval(interval);
+            progress.style.width = "100%";
             const resp = await detailed_summary.json();
             spinner.remove();
             if (!resp.output || typeof resp.output !== "string") 
@@ -233,11 +262,18 @@ try{
                 risk_grading.style.color = "aquamarine";
             }
             console.log(resp);
+            remove_progress_bar();
         }
         catch(err)
         {
             console.error("Failed to send summary to the backend, error: ",err);
+            window.showActionStatus("Failed to retrieve the detailed summary.", "error");
             spinner.remove();
+            remove_progress_bar();
+            button.style.display = "block";
+            button.disabled = false;
+            button.textContent = original_button_text;
+            carousel.cycle();
         }
         function collapse(container,response,container_height,container_width,button){
             container.style.width = container_width + "px";
@@ -296,6 +332,7 @@ try{
 });
 function create_modal()
 {
+        const trigger_element = document.activeElement;
         const existing_modal = document.getElementById("competitor_modal");
         if (existing_modal) {
             existing_modal.remove();
@@ -340,6 +377,7 @@ function create_modal()
         content_div.appendChild(modal_body);
 
         document.body.appendChild(modal_div);
+        window.enhanceModalAccessibility(modal_div, trigger_element);
 
         return{modal_body:modal_body,modal:modal_div,title:title};
 
@@ -357,6 +395,8 @@ function create_modal_table()
     company_name.textContent = "Company Name";
     const market_position = document.createElement("th");
     market_position.textContent = "Market Position"
+    const competitor_product_owner = document.createElement("th");
+    competitor_product_owner.textContent = "Competitor";
     const product_name =  document.createElement("th");
     product_name.textContent = "Product Name";
     const product_price = document.createElement("th");
@@ -372,6 +412,7 @@ function create_modal_table()
     product_table.appendChild(product_table_row);
     table_row1.appendChild(company_name);
     table_row1.appendChild(market_position);
+    product_table_row.appendChild(competitor_product_owner);
     product_table_row.appendChild(product_name);
     product_table_row.appendChild(product_price);
     product_table_row.appendChild(market_share);
@@ -424,18 +465,7 @@ async function populate_modal_accordion(competitor_data_retrieval)
 
                 product_list = Array.from(new Set(product_list));
 
-                const insights = await fetch("/retrieve_accordion_data_batch",
-                    {
-                        method: "POST",
-                        headers:
-                        {
-                            "Content-Type":"application/json"
-                        },
-                        body: JSON.stringify({ products: product_list })
-                    }
-                );
-                const insights_response = await insights.json();
-                const results = insights_response.insights_data || [];
+                const results = await Promise.all(product_list.map(product => retrieve_accordion_data(product)));
                 let ind;
 
                 for(ind = 0;ind < product_list.length;ind++){
@@ -502,6 +532,38 @@ async function populate_modal_accordion(competitor_data_retrieval)
             }
     }
 
+async function retrieve_accordion_data(competitor_product)
+{
+    if (insights_cache.has(competitor_product)) {
+        return insights_cache.get(competitor_product);
+    }
+    try{
+        const insights = await fetch("/retrieve_accordion_data",
+            {
+                method: "POST",
+                headers:
+                {
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify
+                (
+                {
+                    competitor_product: competitor_product
+                }
+                )
+            }
+        )
+            const insights_response =  await insights.json();
+            console.log("Insights response",insights_response);
+            insights_cache.set(competitor_product, insights_response.insights_data);
+            return insights_response.insights_data;
+    }
+    catch(err)
+    {
+        console.error("failed to retrieve competitor product insights",err);
+        return null;
+    }
+}
 
 async function get_competitor_data(products,ideas,competitors)
 {
@@ -553,6 +615,10 @@ function create_regenerate_button()
 
 async function handle_regenerate_click()
 {
+    const regenerate_button = this;
+    const original_button_text = regenerate_button.textContent;
+    regenerate_button.disabled = true;
+    regenerate_button.textContent = "Regenerating...";
     const spinner = create_spinner();
     const span = spinner.querySelector("span");
     span.textContent = "Regenerating the Recommendations";
@@ -569,16 +635,21 @@ async function handle_regenerate_click()
         const result = await response.json();
         
         if (!response.ok) {
+            window.showActionStatus("Failed to regenerate recommendations.", "error");
             const errorModal = create_modal();
             errorModal.title.textContent = "Regeneration Failed";
             errorModal.modal_body.innerHTML = `Failed to regenerate recommendations.`;
             const theModal = new bootstrap.Modal(errorModal.modal);
             theModal.show();
+            spinner.remove();
+            regenerate_button.disabled = false;
+            regenerate_button.textContent = original_button_text;
             return;
         }
         
         // Show success message
         console.log("Recommendations regenerated successfully:", result);
+        window.showActionStatus("Recommendations regenerated successfully.", "success");
         
         // Optionally reload after a delay
         setTimeout(() => {
@@ -587,24 +658,34 @@ async function handle_regenerate_click()
         spinner.remove();
     } catch (err) {
         console.error("Error regenerating recommendations:", err);
+        window.showActionStatus("An error occurred while regenerating recommendations.", "error");
+        spinner.remove();
         const errorModal = create_modal();
         errorModal.title.textContent = "Error";
         errorModal.modal_body.innerHTML = "<p>An error occurred while regenerating recommendations. Please try again.</p>";
         const theModal = new bootstrap.Modal(errorModal.modal);
         theModal.show();
+        regenerate_button.disabled = false;
+        regenerate_button.textContent = original_button_text;
     }
 }
 
 function handle_click(products,ideas,competitors)
 {
-    return async() =>
+    return async function()
     {
+        const competitor_button = this;
+        const original_button_text = competitor_button.textContent;
+        competitor_button.disabled = true;
+        competitor_button.textContent = "Loading...";
+        try{
         create_modal();
         const {table, product_table} = create_modal_table();
         const competitor_data_retrieval = await get_competitor_data(products,ideas,competitors);
         if(!competitor_data_retrieval)
         {
             console.error("competitor data could not be found",competitor_data_retrieval);
+            window.showActionStatus("Unable to load competitor data.", "error");
             return;
         }
         console.log("COMPETITOR DATA RAW:", competitor_data_retrieval);
@@ -639,7 +720,8 @@ function handle_click(products,ideas,competitors)
             
                 const product_table_row = document.createElement("tr");
                 product_table_row.innerHTML = 
-                `<td>${product_name}</td>
+                `<td>${competitor_name}</td>
+                 <td>${product_name}</td>
                  <td>${product_price}</td>
                  <td>${market_share}</td>
                  <td>${items_sold}</td>
@@ -651,8 +733,16 @@ function handle_click(products,ideas,competitors)
 
         })
                 const modal_body = document.querySelector("#competitor_modal .modal-body");
-                modal_body.innerHTML = ""; 
+                modal_body.innerHTML = "";
+                const competitor_header = document.createElement("h5");
+                competitor_header.textContent = "Competitor Overview";
+                competitor_header.classList.add("mb-3");
+                const product_header = document.createElement("h5");
+                product_header.textContent = "Competitor Products";
+                product_header.classList.add("mb-3","mt-4");
+                modal_body.appendChild(competitor_header);
                 modal_body.appendChild(table); 
+                modal_body.appendChild(product_header);
                 modal_body.appendChild(product_table);
 
                  const accord = create_modal_accordion();
@@ -663,6 +753,11 @@ function handle_click(products,ideas,competitors)
                 const modal = document.getElementById("competitor_modal"); 
                 const the_modal = new bootstrap.Modal(modal);
                 the_modal.show();
+        }
+        finally{
+            competitor_button.disabled = false;
+            competitor_button.textContent = original_button_text;
+        }
     }
 }
 function handle_filter_input()
@@ -860,3 +955,14 @@ function create_spinner()
     loading_spinner.appendChild(spinner_span);
     return loading_spinner;
 }
+function create_progress_bar(){
+    const progress_div = document.createElement("div");
+    progress_div.classList.add("progress","my-3");
+    const progress = document.createElement("div");
+    progress.classList.add("progress-bar","progress-bar-striped","progress-bar-animated");
+    progress.setAttribute("role","progressbar");
+    progress.style.width = "0%";
+    progress_div.appendChild(progress);
+    return [progress, progress_div];
+}
+

@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const password = document.getElementById("update_password");
             const email =  document.getElementById("update_email");
             const idea_inputs = document.querySelectorAll(".input-idea");
-            const products = document.querySelectorAll(".individual-product");
+            const products = document.querySelectorAll("#product_portfolio_div .individual-product");
 
                 // value in the document becomes the retrieved value
                 username.value = profile.username;
@@ -85,16 +85,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const products = comp.querySelectorAll(".individual-product");
                 products.forEach((product,j) =>{
+                const saved = profile.user_entered_competitors[i].products?.[j];
+                if (!saved) {
+                    return;
+                }
                 const product_name = product.querySelector(".product-name");
-                product_name.value = profile.user_entered_competitors[i].products[j].product_name;
+                product_name.value = saved.product_name;
 
                 const target_audience = product.querySelector(".target-audience");
-                target_audience.value = profile.user_entered_competitors[i].products[j].target_audience;
+                target_audience.value = saved.target_audience;
 
 
                 const categories = product.querySelectorAll(".categories-checkbox")
                 categories.forEach((category) =>{
-                    if(profile.user_entered_competitors[i].products[j].categories.includes(category.value)
+                    if(saved.categories?.includes(category.value)
                     )
                 {
                     category.checked = true;
@@ -102,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const price_range = product.querySelector(".price_range");
-                price_range.value = profile.user_entered_competitors[i].products[j].price_range;
+                price_range.value = saved.price_range || price_range.value;
 
 
                 })
@@ -169,6 +173,11 @@ update_button.addEventListener("click", async ()=>{
 // function to update the profile asynchronously
 async function update_profile()
 {
+    const original_button_text = update_button.textContent;
+    update_button.disabled = true;
+    update_button.textContent = "Saving...";
+    const spinner = create_spinner();
+    document.body.appendChild(spinner);
     try{
         // create an array of trimmed values fpr each idea input
         const idea_updates = Array.from(document.querySelectorAll(".input-idea")).map(inp => inp.value.trim());
@@ -251,8 +260,6 @@ async function update_profile()
         };
         });
         // send a POST method to the backend to update the profile
-        const spinner = create_spinner();
-        document.body.appendChild(spinner);
         const update = await fetch("/update_profile",{
             method : "POST",
             headers:
@@ -272,10 +279,15 @@ async function update_profile()
         {
             const backend_update = await update.json();
             console.error("Failed update: ",backend_update);
+            spinner.remove();
+            window.showActionStatus("Failed to update your profile.", "error");
+            update_button.disabled = false;
+            update_button.textContent = original_button_text;
             return;
         }
 
         // once a successfull response is retrieved, redirect the user to the homepage
+        window.showActionStatus("Profile updated successfully.", "success");
         window.location.href = "homepage.html";
         
 
@@ -283,6 +295,10 @@ async function update_profile()
     catch(err)
     {
         console.error("Error sending profile updates to the backend: ",err)
+        spinner.remove();
+        window.showActionStatus("Error saving profile changes.", "error");
+        update_button.disabled = false;
+        update_button.textContent = original_button_text;
     }
 }
 // call the update profile method

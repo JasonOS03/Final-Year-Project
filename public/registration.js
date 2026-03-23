@@ -147,8 +147,12 @@ register_button.addEventListener("click",async (e)=>{
     if(!validate_password() || !validate_username())
     {
         console.log("unable to register, username or password invalid");
+        window.showActionStatus("Please fix the registration form errors.", "error");
         return;
     }
+    const original_button_text = register_button.textContent;
+    register_button.disabled = true;
+    register_button.textContent = "Registering...";
     const u_name = document.getElementById("register_uname").value;
     const email = document.getElementById("register_email").value;
     const password = document.getElementById("register_password").value;
@@ -251,6 +255,9 @@ register_button.addEventListener("click",async (e)=>{
     if(product_array.length < 1 && idea_array.length < 1)
     {
         error_section.innerHTML = "Please enter at minimum one idea or one product";
+        window.showActionStatus("Please enter at least one idea or one product.", "error");
+        register_button.disabled = false;
+        register_button.textContent = original_button_text;
         return;
     }
 
@@ -363,13 +370,16 @@ register_button.addEventListener("click",async (e)=>{
          });
          const resp = await generate_recommendations.json();
          console.log(resp.output);
-
+         window.showActionStatus("Registration complete. Redirecting...", "success");
          window.location.href = "index.html";
     }catch(err)
     {
         console.error("failed to send recommendation generation request to the backend",err);
         spinner.remove();
         error_section.innerHTML = "Error generating recommendations, please try again";
+        window.showActionStatus("Error generating recommendations.", "error");
+        register_button.disabled = false;
+        register_button.textContent = original_button_text;
     }
 
 
