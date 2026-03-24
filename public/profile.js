@@ -177,6 +177,7 @@ async function update_profile()
     update_button.disabled = true;
     update_button.textContent = "Saving...";
     const spinner = create_spinner();
+    spinner.classList.add("text-center");
     document.body.appendChild(spinner);
     try{
         // create an array of trimmed values fpr each idea input
@@ -370,7 +371,7 @@ add_competitor?.addEventListener("click",()=>{
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.classList.add("spinner-border","text-success","justify-content-center","d-flex");
     loading_spinner.role = "status";
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");

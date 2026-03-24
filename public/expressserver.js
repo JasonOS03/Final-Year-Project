@@ -869,23 +869,18 @@ app.post("/update_profile",async (request,response) =>{
                 .trim();
         }
 
-        function extract_signal_tokens(ideas = [], products = []) {
-            const raw_values = [
-                ...ideas,
-                ...products.flatMap(product => [
-                    product?.description,
-                    product?.prices,
-                    ...(product?.subscription_types || []),
-                    ...(product?.industries || [])
-                ])
-            ];
+        function extract_idea_tokens(ideas) {
+            return ideas
+                .flatMap(idea => idea.split(/\W+/))
+                .map(t => t.toLowerCase())
+                .filter(t => t.length > 3);
+        }
 
-            return Array.from(new Set(
-                raw_values
-                    .join(" ")
-                    .toLowerCase()
-                    .match(/[a-z][a-z0-9_+-]{3,}/g) || []
-            ));
+        function extract_product_tokens(products) {
+            return products
+                .flatMap(product => product.split(/\W+/))
+                .map(t => t.toLowerCase())
+                .filter(t => t.length > 3);
         }
 
         function score_recommendation(text, ideas = [], products = []) {
@@ -894,9 +889,21 @@ app.post("/update_profile",async (request,response) =>{
                 return -100;
             }
 
-            const signal_tokens = extract_signal_tokens(ideas, products);
-            const matched_tokens = signal_tokens.filter(token => normalized_text.includes(token));
-            let score = matched_tokens.length * 3;
+            const product_tokens = extract_product_tokens(products);
+            const idea_tokens = extract_idea_tokens(ideas);
+            const matched_product_tokens = product_tokens.filter(token => normalized_text.includes(token));
+            const matched_idea_tokens = idea_tokens.filter(token => normalized_text.includes(token));
+            let score = 0;
+            if(matched_product_tokens.length >= 2)
+            {
+                score += 5;
+            }
+            if(matched_idea_tokens.length >= 1)
+            {
+                score += 4;
+            }
+            let total_matched_tokens = matched_product_tokens.length + matched_idea_tokens.length;
+            score += total_matched_tokens *2;
 
             if (normalized_text.length >= 35) {
                 score += 2;
@@ -925,7 +932,7 @@ app.post("/update_profile",async (request,response) =>{
                 !normalized_text ||
                 normalized_text.includes("undefined") ||
                 generic_phrases.some(phrase => normalized_text.includes(phrase)) ||
-                score_recommendation(normalized_text, ideas, products) < 3
+                score_recommendation(normalized_text, ideas, products) < 6
             );
         }
 

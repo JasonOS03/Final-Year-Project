@@ -352,6 +352,7 @@ register_button.addEventListener("click",async (e)=>{
         console.error("failed to send competitor details to the backend");
     }
         const spinner = create_spinner();
+        spinner.classList.add("text-center");
         document.body.appendChild(spinner);
 
     try{
@@ -371,7 +372,7 @@ register_button.addEventListener("click",async (e)=>{
          const resp = await generate_recommendations.json();
          console.log(resp.output);
          window.showActionStatus("Registration complete. Redirecting...", "success");
-         window.location.href = "index.html";
+         window.location.href = "index.html?registered=true";
     }catch(err)
     {
         console.error("failed to send recommendation generation request to the backend",err);
@@ -388,7 +389,7 @@ register_button.addEventListener("click",async (e)=>{
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.classList.add("spinner-border","text-success","justify-content-center","d-flex");
     loading_spinner.role = "status";
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");

@@ -4,6 +4,20 @@ const login_submit =  document.getElementById("login_submit");
 const login_form = document.getElementById("login_form");
 const error_message = document.getElementById("credential_message");
 
+const register_params = new URLSearchParams(window.location.search);
+if(register_params.get("registered") === "true")
+{
+    showToast("You have registered successfully! Please log in to view your recommendations.");
+    setTimeout(()=>{
+        const toast = document.querySelector(".toast");
+        if(toast)
+        {
+            toast.classList.remove("show");
+            toast.remove();
+        }
+},6000);
+}
+
 login_submit.addEventListener("click" ,async (e)=> {
     e.preventDefault();
     const username = document.getElementById("username").value;
@@ -12,6 +26,7 @@ login_submit.addEventListener("click" ,async (e)=> {
     login_submit.disabled = true;
     login_submit.textContent = "Signing in...";
     const spinner = create_spinner();
+    spinner.classList.add("text-center");
     const span = spinner.querySelector("span");
     span.textContent = "Verifying your credentials...";
     spinner.classList.remove("text-success");
@@ -67,7 +82,7 @@ login_submit.addEventListener("click" ,async (e)=> {
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.classList.add("spinner-border","text-success","justify-content-center","d-flex");
     loading_spinner.role = "status";
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");

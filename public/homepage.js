@@ -6,6 +6,20 @@ const left_arrow = document.getElementById("left_arrow");
 const carousel  = document.getElementById("carousel");
 const insights_cache = new Map();
 
+const update_params = new URLSearchParams(window.location.search);
+if(update_params.get("updated") === "true")
+{
+    showToast("You have updated your profile successfully! Here are your revised recommendations.");
+    setTimeout(()=>{
+        const toast = document.querySelector(".toast");
+        if(toast)
+        {
+            toast.classList.remove("show");
+            toast.remove();
+        }
+},6000);
+}
+
 
 
 const view_buttons = document.querySelectorAll(".view_full_recomm");
@@ -134,12 +148,22 @@ try{
             right_arrow.style.display = "none";
         }
 
+        // If already fetched once, show cached HTML immediately (no second fetch)
+        if (container.dataset.fullSummaryLoaded === "true") {
+            container.innerHTML = container.cachedFullSummaryHTML;
+            container.appendChild(x_button);
+            if (container.rate_recommendations_button) {
+                container.appendChild(container.rate_recommendations_button);
+            }
+            return;
+        }
+
         const spinner = create_spinner();
         const spinner_span = spinner.querySelector("span")
         spinner_span.textContent = "retrieving detailed summary...";
         container.appendChild(spinner);
         spinner.classList.remove("text-success");
-        spinner.classList.add("text-warning");
+        spinner.classList.add("text-warning","text-center");
 
         await new Promise(requestAnimationFrame);
         let progress_div = null;
@@ -155,6 +179,13 @@ try{
         };
         try
         {
+            if (container.dataset.fullSummaryLoaded === "true") {
+                container.innerHTML = container.cachedFullSummaryHTML;
+            container.appendChild(x_button);
+                container.appendChild(container.rate_recommendations_button);
+                return;
+            }
+            container.dataset.fullSummaryLoaded = "true";
             const [progress, div] = create_progress_bar();
             progress_div = div;
             container.appendChild(progress_div);
@@ -230,6 +261,9 @@ try{
             <label> Risk Grading </label>
             <p id = "risk_level"></p>`;
 
+            container.cachedFullSummaryHTML = container.innerHTML;
+
+
             const recommendation_id = Number(response.dataset.id);
 
             if(!container.rate_recommendations_button){
@@ -303,9 +337,17 @@ try{
             {
             carousel.insertBefore(right_arrow,carousel.firstChild);
             }
+            container.dataset.fullSummaryLoaded = "false";
+
+            button.style.display = "block";
+            button.disabled = false;
+            button.textContent = "View Full Recommendation";
+            button.setAttribute("aria-expanded", "false");
 
             x_button.remove();
-            container.rate_recommendations_button.remove()
+            if (container.rate_recommendations_button) {
+                container.rate_recommendations_button.remove();
+            }
             }
             container.arguments = {container,response,container_height,container_width,button}
             container._collapseFn = collapse;
@@ -620,6 +662,7 @@ async function handle_regenerate_click()
     regenerate_button.disabled = true;
     regenerate_button.textContent = "Regenerating...";
     const spinner = create_spinner();
+    spinner.classList.add("text-center");
     const span = spinner.querySelector("span");
     span.textContent = "Regenerating the Recommendations";
     document.body.appendChild(spinner);
@@ -736,10 +779,10 @@ function handle_click(products,ideas,competitors)
                 modal_body.innerHTML = "";
                 const competitor_header = document.createElement("h5");
                 competitor_header.textContent = "Competitor Overview";
-                competitor_header.classList.add("mb-3");
+                competitor_header.classList.add("mb-3", "bg-primary", "text-white", "p-2", "rounded");
                 const product_header = document.createElement("h5");
                 product_header.textContent = "Competitor Products";
-                product_header.classList.add("mb-3","mt-4");
+                product_header.classList.add("mb-3", "mt-4", "bg-success", "text-white", "p-2", "rounded");
                 modal_body.appendChild(competitor_header);
                 modal_body.appendChild(table); 
                 modal_body.appendChild(product_header);
@@ -947,7 +990,8 @@ async function submit_ratings(recommendation_id,rating,feedback_text,modal_body)
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success");
+    loading_spinner.classList.add("spinner-border", "text-success", "d-flex", "justify-content-center", "align-items-center");
+    loading_spinner.style.minHeight = "200px";
     loading_spinner.role = "status";
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");
