@@ -14,14 +14,14 @@ const {
     buildFullSummaryPrompt,
     buildInsightsPrompt,
     buildCompetitorPrompt
-} = require("./promptTemplates");
+} = require("./promptTemplates"); // get all the prompts used in the application
 
 app.use(express.json());
-const the_database = couch_database.db.use('final_year_project');
-app.use(cookieparser());
+const the_database = couch_database.db.use('final_year_project'); // specify the database used
+app.use(cookieparser()); // enable use of cookies for session management
 
     const couchUrl = new URL(process.env.COUCHDB_URL);
-
+// use the sessions middleware, with session data including the name, host, port etc of the CouchDB instance.
 app.use(
   sessions({
     secret: "the-secret-key",
@@ -35,48 +35,49 @@ app.use(
       username: couchUrl.username,
       password: couchUrl.password
     }),
-    cookie: { secure: false }
+    cookie: { secure: false } // set cookie to be non secure for development purposes ( HTTPS NOT USED IN DEVELOPMENT )
   })
 );
 
 
-    app.use(express.static("public"));
+    app.use(express.static("public")); // serve static files from the public directory
 
     
-
+// process the user login post request
     app.post("/user_login", async (request,response) => {
         
         try
         {
+            // find that documents containing that users username and password in the database
             const match = await the_database.find
             ({
             selector: {
-                username:request.body.username,
-                password: {"$exists": true}
+                username:request.body.username, // username included in the request body
+                password: {"$exists": true} // password exists for the user
             },
             fields: ["_id", "_rev", "username", "password"]});
-            if(!match.docs || match.docs.length === 0)
+            if(!match.docs || match.docs.length === 0) // if no matching username and password
             {
-                return response.json({success:false,message:"no matching username and password found"});
+                return response.json({success:false,message:"no matching username and password found"}); // return message indicating unsuccessful login
             }
-            const user_document = match.docs[0];
-            const stored_password = user_document.password || "";
-            const valid_password = stored_password.startsWith("$2")
+            const user_document = match.docs[0]; // grab the first matching document from the query
+            const stored_password = user_document.password || ""; // extract stored password from document
+            const valid_password = stored_password.startsWith("$2") // if password starts with $2 ( is hashed with bcrypt) it should be compared with bcrypt otherwise password can be compared directly
                 ? await bcrypt.compare(request.body.password, stored_password)
                 : stored_password === request.body.password;
-            if (!valid_password)
+            if (!valid_password) // if password is not valid, indicate no matching username and password
             {
                 return response.json({success:false,message:"no matching username and password found"});
             }
-            if (!stored_password.startsWith("$2"))
+            if (!stored_password.startsWith("$2")) // if the password is not hashed
             {
-                user_document.password = await bcrypt.hash(request.body.password, 10);
-                await the_database.insert(user_document);
+                user_document.password = await bcrypt.hash(request.body.password, 10); // hash the password
+                await the_database.insert(user_document); // store the document in the database
             }
-            request.session.username = request.body.username;
-            return response.json({success:true , message:"found matching username and password"});
+            request.session.username = request.body.username; // set the session username as the username in the request body
+            return response.json({success:true , message:"found matching username and password"}); // indicate match found
         }
-        catch(err)
+        catch(err) // if request fails, indicate error
         {
             console.log("failed to retrieve username and password",err);
             response.status(500).end("error retrieving data");
@@ -87,16 +88,16 @@ app.use(
     app.get("/retrieve-recommendations", async(request,response)=>
     {
         try{
-            const username = request.session.username;
+            const username = request.session.username; // store the session username in a variable
 
             if (!username) {
                 console.log("User not logged in, session username is undefined");
                 return response.json({ output: [] });
             }
 
-            const final_recommendations = await get_user_recommendations(username);
-            return response.json({ output: final_recommendations });
-        }catch(err){
+            const final_recommendations = await get_user_recommendations(username); // call the function to get the recommendations for a particular user
+            return response.json({ output: final_recommendations }); // return the recommendations
+        }catch(err){ // if error retrieving recommendations, indicate error
             console.log("failed to retrieve recommendations from the database",err);
             return;
         };
@@ -112,12 +113,12 @@ app.use(
                 return response.status(401).json({ error: "User not logged in" });
             }
             
-            // Fetch user's current ideas and products
+            // Fetch user's current ideas and products for generating new recommendations
             const [ideas_query, products_query] = await Promise.all([
             the_database.find({
                 selector: {
                     username: username,
-                    ideas: {$exists: true}
+                    ideas: {$exists: true} // ideas exists for the user
                 },
                 fields: ["ideas"]
             }),
@@ -125,27 +126,27 @@ app.use(
             the_database.find({
                 selector: {
                     username: username,
-                    products: {$exists: true}
+                    products: {$exists: true} // products exist for the user
                 },
                 fields: ["products"]
             })
         ]);
             
-            const ideas = ideas_query.docs[0]?.ideas || [];
-            const products = products_query.docs[0]?.products || [];
+            const ideas = ideas_query.docs[0]?.ideas || []; // extract the ideas or an empty array if no ideas are found
+            const products = products_query.docs[0]?.products || []; // extract the products or an empty array if no products are found
             
-            if (ideas.length === 0 && products.length === 0) {
+            if (ideas.length === 0 && products.length === 0) { // if products and ideas are not found
                 return response.status(400).json({ 
                     error: "No ideas or products found. Please update your profile first." 
-                });
+                }); // return error status
             }
             
             console.log("Regenerating recommendations for user:", username);
             console.log("Current ideas:", ideas);
             console.log("Current products:", products);
             
-            const existing_recommendations = await get_user_recommendations(username);
-            const recommendation_count = existing_recommendations.length > 0 ? existing_recommendations.length : 1;
+            const existing_recommendations = await get_user_recommendations(username); // grab the existing database recommendations
+            const recommendation_count = existing_recommendations.length > 0 ? existing_recommendations.length : 1; // initialise the recommendation count 
 
             // Generate the same number of recommendations the user currently has
             const new_recommendation = await generate_new_recommendation(username, products, ideas, recommendation_count);

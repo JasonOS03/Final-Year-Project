@@ -8,14 +8,29 @@
     <link href = "index.css" rel = "stylesheet">
 </head>
 <body>
+    <div class="bg-warning py-3">
+        <div class="container text-center">
+            <h1 class="mb-0 fw-bold">GenSaaS</h1>
+        </div>
+    </div>
+
+    <div class="container mt-4 text-center">
+        <h2 class="fw-bold text-success">Risk Assessment Platform</h2>
+        <p class="text-muted mb-0">
+            Please log in to access your GenSaaS dashboard and continue your assessment workflow.
+        </p>
+    </div>
+
+
     <h1 class = "text-center mt-4 text-black" id = "login-header">Login</h1>
     <div class = "container mt-4">
         <div class = "row justify-content-center">
             <div id = "login_form" class = "col-md-8 col-lg-6 col-sm-10 bg-success text-center rounded p-4" aria-labelledby="login-header" role = "form">
-            <label class = "form-label text-white" for = "username">User Name: </label>
-            <input class = " bg-white form-control mb-3" id = "username" type="text" placeholder="please enter your username" required aria-required="true">
-            <label class = "form-label text-white" for = "password">Password: </label>
-            <input class = "bg-white form-control mb-3" id = "password" type="password" placeholder="please enter your password" required aria-required="true">
+                <h2 class = "mb-3 text-white">Enter your login credentials:</h2>
+                <label class = "form-label text-white" for = "username">User Name: </label>
+                <input class = " bg-white form-control mb-3" id = "username" type="text" placeholder="please enter your username" required aria-required="true">
+                <label class = "form-label text-white" for = "password">Password: </label>
+                <input class = "bg-white form-control mb-3" id = "password" type="password" placeholder="please enter your password" required aria-required="true">
             </div>
         </div>
     </div>
