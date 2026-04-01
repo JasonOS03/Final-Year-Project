@@ -4,7 +4,8 @@
   "description": "FYP Package",
   "main": "homepage.js",
   "scripts": {
-    "test": "hello world"
+    "start": "node public/expressserver.js",
+    "test": "node --test --test-concurrency=1"
   },
   "repository": {
     "type": "git",
@@ -17,8 +18,7 @@
   },
   "homepage": "https://github.com/JasonOS03/Final-Year-Project#readme",
   "dependencies": {
-    "@huggingface/inference": "^4.13.2",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "connect-couchdb": "^1.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
@@ -27,5 +27,8 @@
     "nano": "^11.0.3",
     "node-fetch": "^2.7.0",
     "supertest": "^7.2.2"
+  },
+  "devDependencies": {
+    "mock-require": "^3.0.3"
   }
 }

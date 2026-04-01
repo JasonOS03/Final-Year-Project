@@ -85,8 +85,8 @@ try{
             list_item.classList.add("active");
             carousel_item.classList.add("active");
         }
-         indicators.appendChild(list_item);
-         carousel_inner.appendChild(carousel_item);
+         indicators.appendChild(list_item); // append the list item
+         carousel_inner.appendChild(carousel_item); // append the carousel item
         
 
         carousel_item.innerHTML = `<div class = "row justify-content-center">
@@ -95,7 +95,8 @@ try{
                 <br><br>
                 <button class = "bg-warning text-black p-1 rounded mb-2 view_full_recomm" id = "view_full_recomm">View Full Recommendation</button>
             </div>
-    </div>`
+    </div>`  // inject the recommendation card containing the 
+    // recommendation text into the carousel item
     const container = carousel_item.querySelector(".col-md-6");
     const response =  container.querySelector("#response");
     response.innerHTML = recommendation.recomm_text;
@@ -218,20 +219,28 @@ try{
             spinner.remove();
             if (!resp.output || typeof resp.output !== "string") 
                 { console.warn("Output empty: ", resp); container.innerHTML = "<p>Summary retrieval failure</p>"; return; }
-            const lower_output = resp.output.toLowerCase();
+            const lower_output = resp.output.toLowerCase(); // convert output to lowercase
 
+            // search for the lines "market conditions" , "size of potential market", "potential cost"
+            // searches for sentence starting with uniqueness and containing the word idea, 
+            // and a sentence starting with the word "sources"
+            // captures everything on the same lines after the headers
+            // extracts the actual values and returns undefined if no match found 
             const market_conditions = lower_output.match(/market\s*conditions[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const market_size = lower_output.match(/size\s*of\s*potential\s*market[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const potential_cost = lower_output.match(/potential\s*cost[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const uniqueness = lower_output.match(/uniqueness.*idea[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const sources_raw = lower_output.match(/sources[:\-–]\s*(.+)/i)?.[1] || "";
-            // Extract URLs from sources
-            const sources_urls = sources_raw.match(/https?:\/\/\S+/g) || [];
+            // search for all URL's starting with http:// or https://
+            const sources_urls = sources_raw.match(/https?:\/\/\S+/g) || []; // return empty array if none exists
+            // if url exists convert into clickable <a> tag
+            // if only raw text exists display the raw text
+            // if nothing exists display the line "no sources available" 
             const clickable_sources = sources_urls.length > 0 ? sources_urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>") : sources_raw && sources_raw.length > 0 ? sources_raw : "No sources available";
             const risk_level =(
-                lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
-                lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] ||
-                lower_output.match(/overall\s*risk[:\-–]\s*([^\n]+)/i)?.[1] ||
+                lower_output.match(/overall\s*risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] || // search for "overall risk grading"
+                lower_output.match(/risk\s*grading[:\-–]\s*([^\n]+)/i)?.[1] || // or "risk grading"
+                lower_output.match(/overall\s*risk[:\-–]\s*([^\n]+)/i)?.[1] || // or "overall risk"
                 "undefined") + "";
 
 
@@ -481,46 +490,48 @@ function create_modal_accordion()
 }
 async function populate_modal_accordion(competitor_data_retrieval)
 {
-    const inner = document.getElementById("inner");
+    const inner = document.getElementById("inner"); // get the inner accordion
     const header = document.createElement("h3");
-    header.textContent = "Product Insights";
+    header.textContent = "Product Insights"; // set the accordion header
     header.classList.add("text-black","text-center","mb-4","mt-4");
     header.id = "accordion_insights_header";
     inner.appendChild(header);
-    const lower_output = competitor_data_retrieval.competitor_data.toLowerCase();
-    const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0);
+    const lower_output = competitor_data_retrieval.competitor_data.toLowerCase(); // convert the competitor data to lowercase
+    const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0); // extract the individual competitors where the length is greater than 0
     let i = 1;
-    let product_list = [];
+    let product_list = []; // initialise empty product list
 
-    for( const competitor of comps){
-        const products = competitor.split(/product\s*\d*:/).slice(1);
+    for( const competitor of comps){ // for each competitor
+        const products = competitor.split(/product\s*\d*:/).slice(1); // extract the individual product
 
-            for( const product of products){
-                trimmed_product = product.trim();
+            for( const product of products){ // for each product
+                trimmed_product = product.trim(); // trim the whitespace
                 if(!trimmed_product)
                 {
                     continue;
                 }
-                product_list.push(trimmed_product);
+                product_list.push(trimmed_product); // push to the product array
             }
         }
-
+                // create a set to remove duplicate values
                 product_list = Array.from(new Set(product_list));
 
-                const results = await Promise.all(product_list.map(product => retrieve_accordion_data(product)));
+                // runs all asynchronous operations at the same time wait for all of the products to return 
+                const results = await Promise.all(product_list.map(product => retrieve_accordion_data(product))); 
                 let ind;
 
                 for(ind = 0;ind < product_list.length;ind++){
                     const trimmed_product = product_list[ind];
                     const product_insights = results[ind];
-                    const accordion_item = document.createElement("div");
+                    const accordion_item = document.createElement("div"); // create the item div
                     accordion_item.classList.add("accordion-item");
 
-                    const accordion_header =  document.createElement("h2");
+                    const accordion_header =  document.createElement("h2"); // create the accordion header
                     accordion_header.classList.add("accordion-header");
 
                     accordion_item.appendChild(accordion_header);
 
+                    // create the expandable and collapsable accordion button
                     const item_button = document.createElement("button");
                     item_button.type = "button";
                     item_button.setAttribute("data-bs-toggle","collapse");
@@ -529,11 +540,13 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     item_button.textContent = `Product ${i}`;
                     accordion_header.appendChild(item_button);
 
+                    // create the collapse div
                     const collapse_accordion =  document.createElement("div");
                     collapse_accordion.classList.add("accordion-collapse","collapse");
                     collapse_accordion.id = `collapse_accord_${i}`;
                     collapse_accordion.setAttribute("data-bs-parent","#inner");
 
+                    // create the accordion body
                     const accordion_body = document.createElement("div");
                     accordion_body.classList.add("accordion-body");
                 
@@ -569,7 +582,7 @@ async function populate_modal_accordion(competitor_data_retrieval)
                     <br><br>
                     <label>Sources:</label>
                     <p3>${clickable_sources}</p3>
-                    `;
+                    `; // inject the strenghts,weaknesses and sources
                     i++;
             }
     }
@@ -650,7 +663,7 @@ function create_competitor_button()
 function create_regenerate_button()
 {
         const regenerate_button = document.createElement("button");
-        regenerate_button.classList.add("bg-info","text-white", "p-1", "rounded", "mb-2","regenerate-recommendations","mx-auto","d-block");
+        regenerate_button.classList.add("bg-info","text-dark", "p-1", "rounded", "mb-2","regenerate-recommendations","mx-auto","d-block");
         regenerate_button.textContent = "Regenerate Recommendations";
         return regenerate_button
 }
@@ -738,30 +751,36 @@ function handle_click(products,ideas,competitors)
         const comps = lower_output.split(/competitor \d+:/) .map(b => b.trim()) .filter(b => b.length > 0);
 
         comps.forEach((competitor,i)=>{
+            // search for values starting with competitor name and market position
+            // capture all the text on the same line
+            // extracts the actual values and returns undefined if not found
             const competitor_name = competitor.match(/competitor name[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
             const market_position = competitor.match(/market position[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
-            const table_row = document.createElement("tr");
+            const table_row = document.createElement("tr"); // create the table row
             table_row.innerHTML = 
             `<td>${competitor_name}</td>
             <td>${market_position}</td>
-            `;
-            table.appendChild(table_row);
+            `; // inject the values into the row
+            table.appendChild(table_row); // append the row to the table
 
+            // extract only the first product
             const products = competitor.split(/product\s*\d*:/).slice(1);
 
             products.forEach((product,i)=>{
-                trimmed_product = product.trim();
+                trimmed_product = product.trim(); // trim the whitespace
                 if(!trimmed_product)
                 {
-                    return;
+                    return; // return if no product exists
                 }
+                // search for all values starting with the product name, product price, market share,
+                // items sold and categories the product falls into
                const product_name = product.match(/product name.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const product_price = product.match(/product price.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const market_share = product.match(/product market share.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const items_sold = product.match(/items sold.*?:\s*([^\n]+)/i)?.[1] || "undefined"; 
                const categories = product.match(/categories.*?:\s*([^\n]+)/i)?.[1] || "undefined";
             
-                const product_table_row = document.createElement("tr");
+                const product_table_row = document.createElement("tr"); // create the row for the product table
                 product_table_row.innerHTML = 
                 `<td>${competitor_name}</td>
                  <td>${product_name}</td>
@@ -769,7 +788,8 @@ function handle_click(products,ideas,competitors)
                  <td>${market_share}</td>
                  <td>${items_sold}</td>
                  <td>${categories}</td>
-                `;
+                `; // inject the product details and the corresponding competitor name 
+                // into the product table row
                 product_table.appendChild(product_table_row);
 
             })

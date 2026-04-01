@@ -154,10 +154,10 @@ app.use(
             return response.json({ 
                 success: true, 
                 message: "Recommendations regenerated successfully",
-                new_recommendation: new_recommendation
+                new_recommendation: new_recommendation // return the new recommendations
             });
             
-        } catch (err) {
+        } catch (err) { // indicate failure to regenerate recommendations and return error message
             console.error("Failed to regenerate recommendations:", err);
             return response.status(500).json({ 
                 error: "Failed to regenerate recommendations",
@@ -165,16 +165,16 @@ app.use(
             });
         }
     });
-
+    // post user registration details asynchronously
     app.post("/register_details", async (request,response)=>
     {
-        const username = request.body.username;
-        const password = request.body.password;
-        const email = request.body.email;
+        const username = request.body.username; // get the username from the request body
+        const password = request.body.password; // get the password from the request body
+        const email = request.body.email; // get the email from the request
         try
         {
-            const hashed_password = await bcrypt.hash(password, 10);
-            await the_database.insert({_id: username + "_profile",username:username,password:hashed_password,email:email});
+            const hashed_password = await bcrypt.hash(password, 10); // hash the password
+            await the_database.insert({_id: username + "_profile",username:username,password:hashed_password,email:email}); // store the username. hashed password and email in the database
             console.log("Inserted user's personal details into the database");
             response.json({success: true, message: "data saved successfully"})
         }
@@ -185,15 +185,22 @@ app.use(
         }
     })
 
+    // POST idea list details to the database
     app.post("/idea_details", async (request,response)=>
     {
         const ideas = request.body.ideas;
         const username = request.body.username;
+        if (!username) {
+            return response.status(400).end("username required");
+        }
+        if (!Array.isArray(ideas)) {
+            return response.status(400).end("ideas must be an array");
+        }
         try
         {
-            await the_database.insert({_id: username + "_ideas",username:username,ideas:ideas});
+            await the_database.insert({_id: username + "_ideas",username:username,ideas:ideas}); // insert the ideas belonging to a particular user to the database
             console.log("Inserted user's idea list into the database");
-            response.json({success: true, message: "data saved successfully"})
+            response.json({success: true, message: "data saved successfully"}) // indicate success
         }
         catch(err)
         {
@@ -202,13 +209,20 @@ app.use(
         }
     })
 
+    // POST product portfolio details to the database
     app.post("/product_details", async (request,response)=>
     {
         const products = request.body.products
         const username = request.body.username;
+        if (!username) {
+            return response.status(400).end("username required");
+        }
+        if (!Array.isArray(products)) {
+            return response.status(400).end("products must be an array");
+        }
         try
         {
-            await the_database.insert({_id: username + "_products",username:username,products:products});
+            await the_database.insert({_id: username + "_products",username:username,products:products}); // insert the product portfolio of that user in the database
             console.log("Inserted user's product portfolio into the database");
             response.json({success: true, message: "data saved successfully"})
         }
@@ -219,12 +233,19 @@ app.use(
         }
     })
 
+    // POST user entered competitor details to the database
     app.post("/competitor_details",async(request,response)=>{
             const competitors = request.body.competitors;
             const username = request.body.username;
+            if (!username) {
+                return response.status(400).end("username required");
+            }
+            if (!Array.isArray(competitors)) {
+                return response.status(400).end("competitors must be an array");
+            }
             try
             {
-            await the_database.insert({_id: username + "_competitors",username:username,user_entered_competitors:competitors});
+            await the_database.insert({_id: username + "_competitors",username:username,user_entered_competitors:competitors}); // insert competitor details in the database
             console.log("Inserted user's competitor details into the database");
             response.json({success: true, message: "data saved successfully"})
             }
@@ -234,7 +255,7 @@ app.use(
             response.status(400).end("data unsuccessfully inserted into database");
             }
     })
-
+    // POST the generated recommendations to the database
     app.post("/generate_recommendations",async (request,response) => 
     {
             try {
@@ -242,13 +263,13 @@ app.use(
                 const products = request.body.products;
                 const ideas = request.body.ideas;
 
-                const api_prompt = buildRecommendationsPrompt(ideas, products, 3);
-                const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, 3);
-                const parts_array = await generate_ranked_recommendations(ideas, products, 3, api_prompt, retry_prompt);
+                const api_prompt = buildRecommendationsPrompt(ideas, products, 3); // build the prompt, passing in the idea list, product portfolio and number of recommendations 
+                const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, 3); // build the fallback prompts
+                const parts_array = await generate_ranked_recommendations(ideas, products, 3, api_prompt, retry_prompt); // generate the three highest ranked recommendations
 
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
-            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],id: i, date_inserted: new Date().toISOString()});
+            await the_database.insert({ username,api_prompt,recomm_text: parts_array[i],id: i, date_inserted: new Date().toISOString()}); // insert each recommendation with a timestamp for each
             console.log("Inserted document:", { username,api_prompt, part:i+1});
             }
 
@@ -267,20 +288,36 @@ app.use(
             }
         
         });
+        // POST method to retrieve the competitor data from the database
     app.post("/get_competitor_data",async (request,response)=>{
         try
         {
+            // get the username, competitors, ideas and products included 
             const username = request.session.username
             const competitors = request.body.competitors;
             const ideas = request.body.ideas;
             const products = request.body.products;
 
+            if (!Array.isArray(competitors) || !Array.isArray(ideas) || !Array.isArray(products)) {
+            return response.status(400).json({ error: "Missing or invalid fields" });
+            }
+
+        // Remove whitespace-only competitors
+        const cleanedCompetitors = competitors
+            .filter(c => typeof c === "string" && c.trim().length > 0);
+
+        // Reject mixed-type competitor arrays
+        if (cleanedCompetitors.length !== competitors.length) {
+            return response.status(400).json({ error: "Competitor names must be non-empty strings" });
+            }
+
+            // query to find LLM generated competitor data tied to a specific user
             const check_comp = await the_database.find(
                 {
                     selector:
                     {
                         username:username,
-                        ai_generated_competitors: {"$exists":true}
+                        ai_generated_competitors: {"$exists":true} // LLM generated competitor data exists
                     },
                     fields:
                     [
@@ -288,15 +325,18 @@ app.use(
                     ]
                 }
             )
+            // if there is at least one document found and it has competitor data
+                    if (check_comp.docs.length >= 1 && check_comp.docs[0].ai_generated_competitors) {
+                        const cached_data = check_comp.docs[0].ai_generated_competitors;
 
-            if(check_comp.docs.length >= 1 && check_comp.docs[0].ai_generated_competitors)
-            {
-                const cached_data =  check_comp.docs[0].ai_generated_competitors
-                 return response.json({
-                                competitor_data: format_competitor_data(cached_data)
-                                });
-            }
+                        const formatted = format_competitor_data(cached_data);
 
+                        return response.json({
+                            competitor_data: Array.isArray(formatted) ? formatted : []
+                        });
+                    }
+
+            // grab all of the recommendations from the database sorted in descending order
             const summary_query = await the_database.find({
                 selector: {
                     username: username,
@@ -306,43 +346,63 @@ app.use(
                 sort: [{ date_inserted: "desc" }]
             });
 
-            const the_summaries = summary_query.docs.slice(0, 1).map(doc => doc.recomm_text).filter(Boolean);
-            const generated_response = await generate_competitor_data(username, products, ideas, competitors, the_summaries);
+            const the_summaries = summary_query.docs.slice(0, 1).map(doc => doc.recomm_text).filter(Boolean); // extract only one of the recommendations and remove any false values (null or undefined)
+            let generated_response = await generate_competitor_data(username, products, ideas, cleanedCompetitors, the_summaries); // generate the competitor data 
 
+            if (
+                !generated_response ||
+                typeof generated_response !== "object" ||
+                !Array.isArray(generated_response.competitors)
+            ) {
+                generated_response = { competitors: [] };
+            }
+
+            // query to retrieve the user entered competitor data
             const competitor_doc_query = await the_database.find({
                 selector: {
                     username: username,
-                    user_entered_competitors: { "$exists": true }
+                    user_entered_competitors: { "$exists": true } // user entered competitor data exists
                 },
                 fields: ["_id", "_rev", "username", "user_entered_competitors"]
             });
 
+            // if there is at least one document found containing user entered competitor data
             if (competitor_doc_query.docs.length >= 1) {
                 const competitor_doc = competitor_doc_query.docs[0];
-                competitor_doc.ai_generated_competitors = generated_response.competitors;
+                competitor_doc.ai_generated_competitors = generated_response.competitors; // save  user entered competitors in the same document as the ai generated competitors
+                try {
                 await the_database.insert(competitor_doc);
-            } else {
-                await the_database.insert({
+            } catch (err) {
+                if (err.statusCode === 409) {
+                    const existing = await the_database.get(competitor_doc._id);
+                    competitor_doc._rev = existing._rev;
+                    await the_database.insert(competitor_doc);
+                } else {
+                    throw err;
+                }
+            } // insert the competitor details into the database
+            } else { // if the user never entered competitor data
+                await the_database.insert({ // insert a new document containing the user entered and ai-generated competitors
                     username,
-                    user_entered_competitors: competitors,
+                    user_entered_competitors: cleanedCompetitors,
                     ai_generated_competitors: generated_response.competitors
                 });
             }
 
             return response.json({
-                competitor_data: format_competitor_data(generated_response.competitors)
+                competitor_data: format_competitor_data(generated_response.competitors) // return the formatted competitor data
              });
                        
                      
         }
-        catch(err)
+        catch(err) // if failure to retrieve the data, indicate error
         {
             console.error("Error: ",err);
             return response.status(500).json({ error: "Backend failure", details: err.message }); 
 
         }
     })
-
+    // post route to generate and retrieve a full expanded recommendation summary
     app.post("/retrieve_full_summary",async (request,response) =>
     {
         console.log("retrieve_full_summary route HIT");
@@ -356,6 +416,7 @@ app.use(
                 const summary = request.body.summary;
                 const id = Number(request.body.id);
 
+                // check if the expanded summary already exists for that user in the database
                 const database_check = await the_database.find(
                     {
                         selector: {
@@ -366,26 +427,25 @@ app.use(
                         fields: ["_id", "_rev", "summary", "expanded_text", "full_summary_prompt", "date_inserted"]
                 });
 
-                const cached_summary = database_check.docs.find(doc => doc.expanded_text);
-                if(cached_summary?.expanded_text)
+                const cached_summary = database_check.docs.find(doc => doc.expanded_text); // grab the exact document that contains the expanded text
+                if(cached_summary?.expanded_text) // if cached expanded summary exists
                 {
-                    return response.json({output: cached_summary.expanded_text});
+                    return response.json({output: cached_summary.expanded_text}); // return the summary
                 }
           
 
-              const full_summary_prompt = buildFullSummaryPrompt(summary);
+              const full_summary_prompt = buildFullSummaryPrompt(summary); // build the prompt for generating the full summary
 
-
-                // post the user prompt to the Ollama API
                 
 
-
             // asynchronously wait for the JSON response
-            const result = await call_api(full_summary_prompt);
+            const result = await app.call_api(full_summary_prompt);
             // parse the response and extract the text content
 
+            // trim the whitespace from the summary, if there is no expanded summary assign it as an empty string
             let expanded_summary = result?.response?.trim() || "";
 
+            // convert expanded summary to string
             expanded_summary = String(expanded_summary).trim();
 
 
@@ -403,16 +463,18 @@ app.use(
             }
         
         });
+    // POST route to handle user logout 
     app.post("/logout", async (request,response) =>
     {
         try
         {
+            // destroy the user session
             request.session.destroy(err =>{
                 if(!err)
                 {
-                    return response.json({success:true})
+                    return response.json({success:true}) // return success message
                 }
-                return response.status(500).json({ error: "Failed to process logout" });
+                return response.status(500).json({ error: "Failed to process logout" }); // indicate error logging out
             })
         }
         catch(err)
@@ -422,6 +484,7 @@ app.use(
         }
     })
 
+    // retriev the user details
     app.get("/retrieve_details",async (request,response) =>{
         try{
         let user = request.session.username;
@@ -433,23 +496,24 @@ app.use(
             return response.status(401).json({ error: "User not logged in" });
         }
 
-        user = user.trim();
+        user = user.trim(); // trim the whitespace
         console.log("SESSION USER:", JSON.stringify(user));
-        const stable_profile = await the_database.get(user + "_profile").catch(() => null);
-        const stable_ideas = await the_database.get(user + "_ideas").catch(() => null);
-        const stable_products = await the_database.get(user + "_products").catch(() => null);
-        const stable_competitors = await the_database.get(user + "_competitors").catch(() => null);
+        const stable_profile = await the_database.get(user + "_profile").catch(() => null); // get the user profile
+        const stable_ideas = await the_database.get(user + "_ideas").catch(() => null); // get the user ideas
+        const stable_products = await the_database.get(user + "_products").catch(() => null); // get the user products
+        const stable_competitors = await the_database.get(user + "_competitors").catch(() => null); // get the user competitors
 
-        if (stable_profile || stable_ideas || stable_products || stable_competitors) {
+        if (stable_profile || stable_ideas || stable_products || stable_competitors) { // if any stable cached profile data exists for the user
             return response.json({
                 username: stable_profile?.username || "",
-                password: "",
-                email: stable_profile?.email || "",
-                ideas: stable_ideas?.ideas || [],
-                products: stable_products?.products || [],
-                user_entered_competitors: stable_competitors?.user_entered_competitors || stable_competitors?.competitors || []
+                password: "", // password returned as empty string for security reasons
+                email: stable_profile?.email || "", // email or empty string if doesnt exist
+                ideas: stable_ideas?.ideas || [], // ideas or empty array if it doesnt exist
+                products: stable_products?.products || [], // products or empty if no products are found
+                user_entered_competitors: stable_competitors?.user_entered_competitors || stable_competitors?.competitors || [] // user entered products or empty array if not found
             });
         }
+        // query the ideas, products, personal details, competitors and return all responses in one go
         const[ideas_query,product_query,personal_details_query,competitors_query] =  await Promise.all([
         the_database.find({
           selector:
@@ -508,21 +572,19 @@ app.use(
     ]);
         
         // Find documents that actually have the ideas, products, and competitors fields
-        const ideas_document = ideas_query.docs.find(d => d.ideas && Array.isArray(d.ideas));
-        const products_document = product_query.docs.find(d => d.products && Array.isArray(d.products));
-        const competitors_document = competitors_query.docs.find(d => Array.isArray(d.user_entered_competitors));
+        const ideas_document = ideas_query.docs.find(d => d.ideas && Array.isArray(d.ideas)); // extract ideas where the ideas are an array
+        const products_document = product_query.docs.find(d => d.products && Array.isArray(d.products)); // extract products where the products are an array
+        const competitors_document = competitors_query.docs.find(d => Array.isArray(d.user_entered_competitors)); // extract user entered competitors where the competitors are in an array
         
-        
-        // MIGRATION: Normalize old competitor schema to new schema
-        
+        // MIGRATION: Normalize old competitor schema to new schema 
 
-        let compList = competitors_document?.user_entered_competitors || [];
+        let compList = competitors_document?.user_entered_competitors || []; // get the user entered competitors, or null if they do not exist
 
 
         return response.json({username: personal_details_query.docs[0]?.username || "",
             password: "",email:personal_details_query.docs[0]?.email || "",ideas: ideas_document?.ideas || [] , 
             products : products_document?.products || [],
-            user_entered_competitors : compList})
+            user_entered_competitors : compList}) // return the details
     }
     catch
     {
@@ -530,9 +592,27 @@ app.use(
     }
     }
 )
+// POST route for handling user profile updates
 app.post("/update_profile",async (request,response) =>{
 
             try{
+                // Validate input
+                const { ideas, products, competitors } = request.body;
+
+                if (!Array.isArray(ideas) || !Array.isArray(products) || !Array.isArray(competitors)) {
+                    return response.status(400).json({ error: "Missing or invalid fields" });
+                }
+
+                // Remove whitespace-only competitors
+                const cleanedCompetitors = competitors
+                    .filter(c => typeof c === "string" && c.trim().length > 0);
+
+                // Reject mixed-type competitor arrays
+                if (cleanedCompetitors.length !== competitors.length) {
+                    return response.status(400).json({ error: "Competitor names must be non-empty strings" });
+                }
+
+                // query the profile details
                 const [ideas_query, product_query,competitor_query,summary_query] = await Promise.all([
                     the_database.find({
                         selector: {
@@ -566,12 +646,12 @@ app.post("/update_profile",async (request,response) =>{
                 const user = request.session.username;
            
 
-        let ideas_document = ideas_query.docs.find(d => d.ideas !== undefined);
-        let products_document = product_query.docs.find(d => d.products !== undefined);
+        let ideas_document = ideas_query.docs.find(d => d.ideas !== undefined); // grab the ideas where they have been defined
+        let products_document = product_query.docs.find(d => d.products !== undefined); // grab the products where they have been defined
         let competitors_document = competitor_query.docs.find(
-            d => d.user_entered_competitors !== undefined || d.competitors !== undefined
+            d => d.user_entered_competitors !== undefined || d.competitors !== undefined // grab the competitors where they have been defined
         );
-        const the_summaries = summary_query.docs.map(doc => doc.recomm_text).filter(Boolean);
+        const the_summaries = summary_query.docs.map(doc => doc.recomm_text).filter(Boolean); // grab the recommendation text
 
         if (!ideas_document) 
             { ideas_document = 
@@ -581,7 +661,7 @@ app.post("/update_profile",async (request,response) =>{
                 { _id: user + "_products", username: user, products: [] }; }
          if (!competitors_document) 
             { competitors_document = 
-                { _id: user + "_competitors", username: user, competitors: [] }; }
+                { _id: user + "_competitors", username: user, user_entered_competitors: [] }; }
         else if (!competitors_document.user_entered_competitors && !competitors_document.competitors)
         {
             competitors_document.user_entered_competitors = [];
@@ -594,7 +674,7 @@ app.post("/update_profile",async (request,response) =>{
 
         const new_ideas = request.body.ideas;
         const new_products =  request.body.products;
-        const new_competitors = request.body.competitors
+        const new_competitors = cleanedCompetitors
 
         // Check if ideas or products have actually changed (content or length)
         if(JSON.stringify(old_ideas) !== JSON.stringify(new_ideas) || 
@@ -602,34 +682,79 @@ app.post("/update_profile",async (request,response) =>{
         {
             changed = true;
         }
+        // generate new recommendation if the ideas and products are different
         if(changed){
             await generate_new_recommendation(user,new_products,new_ideas,1,false);
         }
-
+        // if competitor details are different
         if(JSON.stringify(old_competitors) !== JSON.stringify(new_competitors))
         {
 
-                competitors_document.user_entered_competitors = new_competitors;
-                await the_database.insert(competitors_document);
+                competitors_document.user_entered_competitors = new_competitors; // assign the new competitor data to the old data
+                try {
+                        await the_database.insert(competitors_document);
+                    } catch (err) {
+                        if (err.statusCode === 409) {
+                            const existing = await the_database.get(competitors_document._id);
+                            competitors_document._rev = existing._rev;
+                            await the_database.insert(competitors_document);
+                        } else {
+                            throw err;
+                        }
+                    }
+ // insert the new document into the database
                 setImmediate( () => {
+                    // generate new competitor data using the new values
             const generated_response = generate_competitor_data(user,new_products,new_ideas,new_competitors,the_summaries );
             generated_response.then(async(generated_response) => {
-                competitors_document.ai_generated_competitors = generated_response.competitors;
+                competitors_document.ai_generated_competitors = generated_response.competitors; // assign the new data as the LLM generated data to be displayed in the modal
+                try {
                 await the_database.insert(competitors_document);
+            } catch (err) {
+                if (err.statusCode === 409) {
+                    const existing = await the_database.get(competitors_document._id);
+                    competitors_document._rev = existing._rev;
+                    await the_database.insert(competitors_document);
+                } else {
+                    throw err;
+                }
+            } // insert the document into the database
             }).catch(error =>{
                 console.error(error);
             })
             });
         }
         else{
-        competitors_document.user_entered_competitors = new_competitors;
+        competitors_document.user_entered_competitors = new_competitors; // assign the new data as the old data
         }
 
 
         ideas_document.ideas = new_ideas;
         products_document.products = new_products;
-        await the_database.insert(ideas_document);
-        await the_database.insert(products_document);
+            try {
+                await the_database.insert(ideas_document);
+            } catch (err) {
+                if (err.statusCode === 409) {
+                    const existing = await the_database.get(ideas_document._id);
+                    ideas_document._rev = existing._rev;
+                    await the_database.insert(ideas_document);
+                } else {
+                    throw err;
+                }
+            }
+
+            try {
+                await the_database.insert(products_document);
+            } catch (err) {
+                if (err.statusCode === 409) {
+                    const existing = await the_database.get(products_document._id);
+                    products_document._rev = existing._rev;
+                    await the_database.insert(products_document);
+                } else {
+                    throw err;
+                }
+            }
+
 
         return response.json({success:true});
 
@@ -737,42 +862,67 @@ app.post("/update_profile",async (request,response) =>{
     })
         async function parse_competitor_data(competitor_data)
         {
-            const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
-            const parsed_response =  JSON.parse(trimmed_response);
-            parsed_response.competitors = parsed_response.competitors.map(c => ({
-            competitor_name: c.competitor_name || c.competitor || "",
-            market_position: (c.market_position || c.market_pos || "").toLowerCase(),
-            source: c.source || "",
-            products: (c.products || []).map(p => ({
-                product_name: p.product_name || "",
-                product_price: p.product_price || p.price_range || "",
-                market_share: p.market_share || "",
-                items_sold: p.items_sold || "",
-                categories: p.categories || []
-                }))
-            }));
+            try {
+                if (!competitor_data || !competitor_data.response) {
+                    console.warn("Invalid competitor data response:", competitor_data);
+                    return { competitors: [] };
+                }
 
-            return parsed_response;
+                const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
+                const parsed_response = JSON.parse(trimmed_response);
+
+                if (!parsed_response.competitors || !Array.isArray(parsed_response.competitors)) {
+                    console.warn("Invalid competitors array in response:", parsed_response);
+                    return { competitors: [] };
+                }
+
+                parsed_response.competitors = parsed_response.competitors.map(c => ({
+                    competitor_name: c.competitor_name || c.competitor || "",
+                    market_position: (c.market_position || c.market_pos || "").toLowerCase(),
+                    source: c.source || "",
+                    products: (c.products || []).map(p => ({
+                        product_name: p.product_name || "",
+                        product_price: p.product_price || p.price_range || "",
+                        market_share: p.market_share || "",
+                        items_sold: p.items_sold || "",
+                        categories: p.categories || []
+                    }))
+                }));
+
+                return parsed_response;
+            } catch (err) {
+                console.error("Error parsing competitor data:", err);
+                return { competitors: [] };
+            }
         }
-        function format_competitor_data(competitors = [])
-        {
-            return competitors
-                .map((comp, i) => {
-                    const product = comp.products?.[0] || {};
-                    return `Competitor ${i+1}:
-                                Competitor Name: ${comp.competitor_name}
-                                Market Position: ${comp.market_position}
-                                Product 1:
-                                Product Name: ${product.product_name || ""}
-                                Product Price: ${product.product_price || ""}
-                                Product Market Share: ${product.market_share || ""}
-                                Items Sold: ${product.items_sold || ""}
-                                Categories: ${(product.categories || []).join(", ")}`;
-                })
-                .join("\n\n");
-        }
+        function format_competitor_data(competitors = []) {
+            if (!Array.isArray(competitors) || competitors.length === 0) {
+                return [];
+            }
+
+            return competitors.map((comp, i) => {
+            const product = comp.products?.[0] || {};
+
+                    return {
+                        competitor_number: i + 1,
+                        competitor_name: comp.competitor_name || "",
+                        market_position: comp.market_position || "",
+                        product: {
+                            product_name: product.product_name || "",
+                            product_price: product.product_price || "",
+                            market_share: product.market_share || "",
+                            items_sold: product.items_sold || "",
+                            categories: Array.isArray(product.categories)
+                                ? product.categories
+                                : []
+                        }
+                    };
+                });
+            }
+
         async function get_or_generate_accordion_insight(username, product)
         {
+            // search for documents containing insights for that product
             const insights_query = await the_database.find({
                 selector:
                 {
@@ -785,16 +935,16 @@ app.post("/update_profile",async (request,response) =>{
                     "insights"
                 ]
             });
-
+            // if at least one document exists, return the insights
             if(insights_query.docs.length >= 1)
             {
                 return insights_query.docs[0].insights;
             }
 
-            const insights_prompt = buildInsightsPrompt(product);
-            const insights_data = await call_api(insights_prompt);
-            const response_data = insights_data.response;
-            await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data});
+            const insights_prompt = buildInsightsPrompt(product); // build the insights prompt
+            const insights_data = await app.call_api(insights_prompt); // call the api
+            const response_data = insights_data.response; // extract the response
+            await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data}); // insert the prompt, product and response into the database
             return response_data;
         }
         async function generate_competitor_data(username,products,ideas,competitors,the_summaries){
@@ -803,7 +953,7 @@ app.post("/update_profile",async (request,response) =>{
                 const the_ideas = JSON.stringify(ideas);
 
                 const competitor_data_prompt = buildCompetitorPrompt(the_summaries, competitors, ideas, products);
-                const competitor_data =  await call_api(competitor_data_prompt);
+                const competitor_data =  await app.call_api(competitor_data_prompt);
                return await parse_competitor_data(competitor_data);
 
 
@@ -871,15 +1021,17 @@ app.post("/update_profile",async (request,response) =>{
         }
 
         function extract_idea_tokens(ideas) {
-            return ideas
-                .flatMap(idea => idea.split(/\W+/))
+            const ideasArray = Array.isArray(ideas) ? ideas : [];
+            return ideasArray
+                .flatMap(idea => String(idea).split(/\W+/))
                 .map(t => t.toLowerCase())
                 .filter(t => t.length > 3);
         }
 
         function extract_product_tokens(products) {
-            return products
-                .flatMap(product => product.split(/\W+/))
+            const productsArray = Array.isArray(products) ? products : [];
+            return productsArray
+                .flatMap(product => String(product).split(/\W+/))
                 .map(t => t.toLowerCase())
                 .filter(t => t.length > 3);
         }
@@ -897,31 +1049,35 @@ app.post("/update_profile",async (request,response) =>{
             let score = 0;
             if(matched_product_tokens.length >= 2)
             {
-                score += 5;
+                score += 5; // increase the score by 5 if there is at least 2 matched words
+                // from the users product portfolio
             }
             if(matched_idea_tokens.length >= 1)
             {
-                score += 4;
+                score += 4; // increase the score by 4 if there is at least one matched word
+                // from the idea list
             }
-            let total_matched_tokens = matched_product_tokens.length + matched_idea_tokens.length;
-            score += total_matched_tokens *2;
+            let total_matched_tokens = matched_product_tokens.length + matched_idea_tokens.length; // add the idea tokens and product tokens to get a total number of tokens
+            score += total_matched_tokens *2; // add the total matched * 2 to the score
 
             if (normalized_text.length >= 35) {
-                score += 2;
+                score += 2; // increase the score if the text is greater than or equal 35 characters
             }
             if (normalized_text.includes("subscription") || normalized_text.includes("pricing")) {
-                score += 1;
+                score += 1; // increase the score if the recommendation contains the words subscription and pricing
             }
             if (normalized_text.includes("dashboard") || normalized_text.includes("platform")) {
-                score -= 1;
+                score -= 1; // decrease the score if the recommendations contains
+                //the generic keywords dashboard or platform 
             }
 
             return score;
         }
 
         function is_generic_recommendation(text, ideas = [], products = []) {
+            // normalise the recommendation text and convert to lowercase
             const normalized_text = normalize_recommendation_text(text).toLowerCase();
-            const generic_phrases = [
+            const generic_phrases = [ // create an array of generic phrases
                 "ai-powered platform",
                 "saas platform",
                 "business management tool",
@@ -929,6 +1085,8 @@ app.post("/update_profile",async (request,response) =>{
                 "marketplace for businesses"
             ];
 
+            // reject if text is not normalised, includes the word defined, 
+            // includes generic phrases or has a score of less than 6
             return (
                 !normalized_text ||
                 normalized_text.includes("undefined") ||
@@ -960,11 +1118,11 @@ app.post("/update_profile",async (request,response) =>{
         }
 
         async function generate_ranked_recommendations(ideas, products, recommendation_count, prompt, retry_prompt) {
-            const first_result = await call_api(prompt);
+            const first_result = await app.call_api(prompt);
             let best_recommendations = parse_recommendation_output(first_result?.response?.trim() || "", recommendation_count, ideas, products);
 
             if (best_recommendations.length < recommendation_count) {
-                const retry_result = await call_api(retry_prompt);
+                const retry_result = await app.call_api(retry_prompt);
                 const retry_recommendations = parse_recommendation_output(retry_result?.response?.trim() || "", recommendation_count, ideas, products);
                 best_recommendations = Array.from(new Set(best_recommendations.concat(retry_recommendations)))
                     .sort((a, b) => score_recommendation(b, ideas, products) - score_recommendation(a, ideas, products))
@@ -1042,35 +1200,36 @@ app.post("/update_profile",async (request,response) =>{
             }
         }
        
-         async function call_api(prompt)
+        app.call_api = async function call_api(prompt)
         {
-                // post the user prompt to the OpenRouter API
-                const resp = await fetch("http://localhost:11434/api/generate", {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json"  
-                    
-                    },
-                    body: JSON.stringify({
-                        model: "llama3",
-                        prompt: prompt,
-                        stream: false
-                        // indicates the AI model used
-                }) // sets a maximum token limit 
-
-            });
-            console.log("Ollama response status:", resp.status);
-
-            if (!resp.ok) 
-            {
-            const error_text = await resp.text();
-            console.error("Model API error:", error_text);
-            throw new Error(error_text);
+            // test mode override (fast deterministic responses)
+            if (process.env.NODE_ENV === "test" && typeof app.call_apiMock === "function") {
+                return app.call_apiMock(prompt);
             }
 
-            // asynchronously wait for the JSON response
+            // post the user prompt to the OpenRouter API
+            const resp = await fetch("http://localhost:11434/api/generate", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "llama3",
+                    prompt: prompt,
+                    stream: false
+                })
+            });
+
+            console.log("Ollama response status:", resp.status);
+
+            if (!resp.ok) {
+                const error_text = await resp.text();
+                console.error("Model API error:", error_text);
+                throw new Error(error_text);
+            }
+
             const result = await resp.json();
-            console.log("Ollama result: ",result);
+            console.log("Ollama result: ", result);
             return result;
         }
          if(require.main === module){
@@ -1081,3 +1240,4 @@ app.post("/update_profile",async (request,response) =>{
         );
     }
     module.exports = app;
+    module.exports.call_api = app.call_api;
