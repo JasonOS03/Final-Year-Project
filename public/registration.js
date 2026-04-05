@@ -7,6 +7,7 @@ const register_button = document.getElementById("register_button");
 
 function attach_slider_value(slider)
 {
+    // Update the helper text below a range input whenever its value changes.
     const slider_value = slider.parentElement.querySelector(".slider-value");
     if (!slider_value) {
         return;
@@ -22,6 +23,7 @@ document.querySelectorAll(".price_range").forEach(attach_slider_value);
 
 function validate_username()
 {
+    // Require a minimum username length before allowing registration.
     const u_name = document.getElementById("register_uname").value;
     if (u_name.length < 8)
     {
@@ -33,6 +35,7 @@ function validate_username()
 
 function validate_password()
 {
+    // Require a stronger password and stop it from matching the username.
     const password = document.getElementById("register_password").value;
     const u_name = document.getElementById("register_uname").value;
     const regex = /^[A-Za-z](?=.*\d).{9,}$/;
@@ -55,6 +58,7 @@ let idea_number = 3;
 
 add_ideas_button.addEventListener("click",()=>
 {
+     // Add another blank idea input to the registration form.
      const label = document.createElement("label");
      label.className = "text-black form-label";
      label.textContent = "Idea " + ++idea_number;
@@ -71,6 +75,7 @@ add_ideas_button.addEventListener("click",()=>
 
 let product_count = 1;
 add_products_button.addEventListener("click",()=>{
+    // Clone the product block so the user can add another product portfolio item.
     const product = document.querySelector(".individual-product");
     const duplicate = product.cloneNode(true);  
 
@@ -101,6 +106,7 @@ const add_competitor = document.getElementById("add_competitor");
 let competitor_count = 1;
 
 add_competitor.addEventListener("click", () => {
+    // Clone the competitor template and reset its fields for a new competitor entry.
     const template = document.querySelector(".individual-competitor");
     const clone = template.cloneNode(true);
 
@@ -121,6 +127,7 @@ add_competitor.addEventListener("click", () => {
 
 document.addEventListener("click", e => {
     if (e.target.id === "add_product" && e.target.closest(".individual-competitor")) {
+        // Add another product inside the competitor card that the user clicked.
 
         const comp = e.target.closest(".individual-competitor");
         const template = comp.querySelector(".individual-product");
@@ -142,6 +149,7 @@ document.addEventListener("click", e => {
 
 
 register_button.addEventListener("click",async (e)=>{
+    // Collect each section of the form and send it to the backend in order.
     e.preventDefault();
 
     if(!validate_password() || !validate_username())
@@ -352,7 +360,6 @@ register_button.addEventListener("click",async (e)=>{
         console.error("failed to send competitor details to the backend");
     }
         const spinner = create_spinner();
-        spinner.classList.add("text-center");
         document.body.appendChild(spinner);
 
     try{
@@ -389,12 +396,16 @@ register_button.addEventListener("click",async (e)=>{
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success","justify-content-center","d-flex");
+    loading_spinner.classList.add("d-flex","justify-content-center","align-items-center","w-100");
+    loading_spinner.style.minHeight = "200px";
     loading_spinner.role = "status";
+    const spinner_icon = document.createElement("div");
+    spinner_icon.classList.add("spinner-border","text-success");
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");
     spinner_span.textContent = "Saving your details and generating your recommendations...";
-    loading_spinner.appendChild(spinner_span);
+    spinner_icon.appendChild(spinner_span);
+    loading_spinner.appendChild(spinner_icon);
     return loading_spinner;
 }
 

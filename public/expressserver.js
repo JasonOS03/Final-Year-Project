@@ -15,6 +15,16 @@ const {
     buildInsightsPrompt,
     buildCompetitorPrompt
 } = require("./promptTemplates"); // get all the prompts used in the application
+const {
+    generateRankedRecommendations,
+    getUserRecommendations,
+    generateNewRecommendation
+} = require("../server/recommendationHelpers"); // recommendation parsing and ranking helpers
+const {
+    formatCompetitorData,
+    getOrGenerateAccordionInsight,
+    generateCompetitorData
+} = require("../server/competitorHelpers"); // competitor parsing and insight helpers
 
 app.use(express.json());
 const the_database = couch_database.db.use('final_year_project'); // specify the database used
@@ -95,7 +105,7 @@ app.use(
                 return response.json({ output: [] });
             }
 
-            const final_recommendations = await get_user_recommendations(username); // call the function to get the recommendations for a particular user
+            const final_recommendations = await getUserRecommendations(the_database, username); // get the latest stored recommendations for this user
             return response.json({ output: final_recommendations }); // return the recommendations
         }catch(err){ // if error retrieving recommendations, indicate error
             console.log("failed to retrieve recommendations from the database",err);
@@ -145,11 +155,20 @@ app.use(
             console.log("Current ideas:", ideas);
             console.log("Current products:", products);
             
-            const existing_recommendations = await get_user_recommendations(username); // grab the existing database recommendations
+            const existing_recommendations = await getUserRecommendations(the_database, username); // grab the existing database recommendations
             const recommendation_count = existing_recommendations.length > 0 ? existing_recommendations.length : 1; // initialise the recommendation count 
 
             // Generate the same number of recommendations the user currently has
-            const new_recommendation = await generate_new_recommendation(username, products, ideas, recommendation_count);
+            const new_recommendation = await generateNewRecommendation({
+                database: the_database,
+                username,
+                products,
+                ideas,
+                recommendationCount: recommendation_count,
+                buildRecommendationsPrompt,
+                buildRecommendationsRetryPrompt,
+                callApi: app.call_api
+            });
             
             return response.json({ 
                 success: true, 
@@ -265,7 +284,14 @@ app.use(
 
                 const api_prompt = buildRecommendationsPrompt(ideas, products, 3); // build the prompt, passing in the idea list, product portfolio and number of recommendations 
                 const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, 3); // build the fallback prompts
-                const parts_array = await generate_ranked_recommendations(ideas, products, 3, api_prompt, retry_prompt); // generate the three highest ranked recommendations
+                const parts_array = await generateRankedRecommendations({
+                    ideas,
+                    products,
+                    recommendationCount: 3,
+                    prompt: api_prompt,
+                    retryPrompt: retry_prompt,
+                    callApi: app.call_api
+                }); // generate the three highest ranked recommendations
 
             // insert the formatted response and the user prompt into the database
             for(let i = 0;i<parts_array.length;i++){
@@ -302,12 +328,23 @@ app.use(
             return response.status(400).json({ error: "Missing or invalid fields" });
             }
 
-        // Remove whitespace-only competitors
-        const cleanedCompetitors = competitors
+        // Accept either raw competitor-name strings or saved competitor objects from the profile data.
+        const normalizedCompetitors = competitors.map(competitor => {
+            if (typeof competitor === "string") {
+                return competitor;
+            }
+            if (competitor && typeof competitor === "object") {
+                return competitor.competitor || competitor.name || "";
+            }
+            return "";
+        });
+
+        // Remove whitespace-only competitors after normalising the payload.
+        const cleanedCompetitors = normalizedCompetitors
             .filter(c => typeof c === "string" && c.trim().length > 0);
 
-        // Reject mixed-type competitor arrays
-        if (cleanedCompetitors.length !== competitors.length) {
+        // Reject mixed or empty competitor entries after normalisation.
+        if (cleanedCompetitors.length !== normalizedCompetitors.length) {
             return response.status(400).json({ error: "Competitor names must be non-empty strings" });
             }
 
@@ -329,7 +366,7 @@ app.use(
                     if (check_comp.docs.length >= 1 && check_comp.docs[0].ai_generated_competitors) {
                         const cached_data = check_comp.docs[0].ai_generated_competitors;
 
-                        const formatted = format_competitor_data(cached_data);
+                        const formatted = formatCompetitorData(cached_data);
 
                         return response.json({
                             competitor_data: Array.isArray(formatted) ? formatted : []
@@ -347,7 +384,15 @@ app.use(
             });
 
             const the_summaries = summary_query.docs.slice(0, 1).map(doc => doc.recomm_text).filter(Boolean); // extract only one of the recommendations and remove any false values (null or undefined)
-            let generated_response = await generate_competitor_data(username, products, ideas, cleanedCompetitors, the_summaries); // generate the competitor data 
+            let generated_response = await generateCompetitorData({
+                username,
+                products,
+                ideas,
+                competitors: cleanedCompetitors,
+                summaries: the_summaries,
+                buildCompetitorPrompt,
+                callApi: app.call_api
+            }); // generate the competitor data 
 
             if (
                 !generated_response ||
@@ -390,7 +435,7 @@ app.use(
             }
 
             return response.json({
-                competitor_data: format_competitor_data(generated_response.competitors) // return the formatted competitor data
+                competitor_data: formatCompetitorData(generated_response.competitors) // return the formatted competitor data
              });
                        
                      
@@ -684,7 +729,17 @@ app.post("/update_profile",async (request,response) =>{
         }
         // generate new recommendation if the ideas and products are different
         if(changed){
-            await generate_new_recommendation(user,new_products,new_ideas,1,false);
+            await generateNewRecommendation({
+                database: the_database,
+                username: user,
+                products: new_products,
+                ideas: new_ideas,
+                recommendationCount: 1,
+                replaceExisting: false,
+                buildRecommendationsPrompt,
+                buildRecommendationsRetryPrompt,
+                callApi: app.call_api
+            });
         }
         // if competitor details are different
         if(JSON.stringify(old_competitors) !== JSON.stringify(new_competitors))
@@ -705,7 +760,15 @@ app.post("/update_profile",async (request,response) =>{
  // insert the new document into the database
                 setImmediate( () => {
                     // generate new competitor data using the new values
-            const generated_response = generate_competitor_data(user,new_products,new_ideas,new_competitors,the_summaries );
+            const generated_response = generateCompetitorData({
+                username: user,
+                products: new_products,
+                ideas: new_ideas,
+                competitors: new_competitors,
+                summaries: the_summaries,
+                buildCompetitorPrompt,
+                callApi: app.call_api
+            });
             generated_response.then(async(generated_response) => {
                 competitors_document.ai_generated_competitors = generated_response.competitors; // assign the new data as the LLM generated data to be displayed in the modal
                 try {
@@ -768,7 +831,13 @@ app.post("/update_profile",async (request,response) =>{
         try{
             const product = request.body.competitor_product;
             const username = request.session.username;
-            const insights_data = await get_or_generate_accordion_insight(username, product);
+            const insights_data = await getOrGenerateAccordionInsight({
+                database: the_database,
+                username,
+                product,
+                buildInsightsPrompt,
+                callApi: app.call_api
+            });
             response.json({insights_data});
         }
         catch(err)
@@ -783,7 +852,13 @@ app.post("/update_profile",async (request,response) =>{
             const products = Array.isArray(request.body.products) ? request.body.products : [];
             const unique_products = Array.from(new Set(products.filter(Boolean)));
             const insights_data = await Promise.all(
-                unique_products.map(product => get_or_generate_accordion_insight(username, product))
+                unique_products.map(product => getOrGenerateAccordionInsight({
+                    database: the_database,
+                    username,
+                    product,
+                    buildInsightsPrompt,
+                    callApi: app.call_api
+                }))
             );
             return response.json({insights_data});
         }
@@ -860,346 +935,6 @@ app.post("/update_profile",async (request,response) =>{
         return response.status(500).json({error:"Failed to retrieve submission status"})
     }
     })
-        async function parse_competitor_data(competitor_data)
-        {
-            try {
-                if (!competitor_data || !competitor_data.response) {
-                    console.warn("Invalid competitor data response:", competitor_data);
-                    return { competitors: [] };
-                }
-
-                const trimmed_response = competitor_data.response.trim().match(/{[\s\S]*}/)?.[0] || "{}";
-                const parsed_response = JSON.parse(trimmed_response);
-
-                if (!parsed_response.competitors || !Array.isArray(parsed_response.competitors)) {
-                    console.warn("Invalid competitors array in response:", parsed_response);
-                    return { competitors: [] };
-                }
-
-                parsed_response.competitors = parsed_response.competitors.map(c => ({
-                    competitor_name: c.competitor_name || c.competitor || "",
-                    market_position: (c.market_position || c.market_pos || "").toLowerCase(),
-                    source: c.source || "",
-                    products: (c.products || []).map(p => ({
-                        product_name: p.product_name || "",
-                        product_price: p.product_price || p.price_range || "",
-                        market_share: p.market_share || "",
-                        items_sold: p.items_sold || "",
-                        categories: p.categories || []
-                    }))
-                }));
-
-                return parsed_response;
-            } catch (err) {
-                console.error("Error parsing competitor data:", err);
-                return { competitors: [] };
-            }
-        }
-        function format_competitor_data(competitors = []) {
-            if (!Array.isArray(competitors) || competitors.length === 0) {
-                return [];
-            }
-
-            return competitors.map((comp, i) => {
-            const product = comp.products?.[0] || {};
-
-                    return {
-                        competitor_number: i + 1,
-                        competitor_name: comp.competitor_name || "",
-                        market_position: comp.market_position || "",
-                        product: {
-                            product_name: product.product_name || "",
-                            product_price: product.product_price || "",
-                            market_share: product.market_share || "",
-                            items_sold: product.items_sold || "",
-                            categories: Array.isArray(product.categories)
-                                ? product.categories
-                                : []
-                        }
-                    };
-                });
-            }
-
-        async function get_or_generate_accordion_insight(username, product)
-        {
-            // search for documents containing insights for that product
-            const insights_query = await the_database.find({
-                selector:
-                {
-                    username,
-                    product: product,
-                    insights: {"$exists":true}
-                },
-                fields:
-                [
-                    "insights"
-                ]
-            });
-            // if at least one document exists, return the insights
-            if(insights_query.docs.length >= 1)
-            {
-                return insights_query.docs[0].insights;
-            }
-
-            const insights_prompt = buildInsightsPrompt(product); // build the insights prompt
-            const insights_data = await app.call_api(insights_prompt); // call the api
-            const response_data = insights_data.response; // extract the response
-            await the_database.insert({username:username,prompt:insights_prompt,product:product,insights: response_data}); // insert the prompt, product and response into the database
-            return response_data;
-        }
-        async function generate_competitor_data(username,products,ideas,competitors,the_summaries){
-            try{
-                const the_products = JSON.stringify(products);
-                const the_ideas = JSON.stringify(ideas);
-
-                const competitor_data_prompt = buildCompetitorPrompt(the_summaries, competitors, ideas, products);
-                const competitor_data =  await app.call_api(competitor_data_prompt);
-               return await parse_competitor_data(competitor_data);
-
-
-
-
-            }catch(err){
-                console.log("error generating competitor data",err);
-                throw err;
-            }
-        }
-        
-        async function get_user_recommendations(username, limit = 4){
-            const query = await the_database.find({
-                selector:
-                {
-                    date_inserted: {$exists : true},
-                    api_prompt: {"$exists": true },
-                    username: username
-                },
-                fields:
-                [
-                    "_id",
-                    "_rev",
-                    "recomm_text",
-                    "date_inserted",
-                    "id"
-                ],
-                sort:
-                [
-                    { date_inserted: "desc" }
-                ]
-            });
-
-            if(!query.docs || query.docs.length === 0)
-            {
-                return [];
-            }
-
-            const value_array = [];
-            const deduplicated_values = query.docs.filter(doc =>
-            {
-                if (value_array.includes(doc.recomm_text))
-                {
-                    return false;
-                }
-                value_array.push(doc.recomm_text);
-                return true;
-            });
-
-            const complete_recommendations = deduplicated_values.filter(doc => {
-                return doc.recomm_text &&
-                       !doc.recomm_text.includes("undefined") &&
-                       doc.recomm_text.trim().length > 0;
-            });
-
-            return complete_recommendations.slice(0, limit);
-        }
-
-        function normalize_recommendation_text(text) {
-            return String(text || "")
-                .replace(/^\d+\.\s*/, "")
-                .split(/\s+based on this portfolio:/i)[0]
-                .split(/\s+and these ideas:/i)[0]
-                .trim();
-        }
-
-        function extract_idea_tokens(ideas) {
-            const ideasArray = Array.isArray(ideas) ? ideas : [];
-            return ideasArray
-                .flatMap(idea => String(idea).split(/\W+/))
-                .map(t => t.toLowerCase())
-                .filter(t => t.length > 3);
-        }
-
-        function extract_product_tokens(products) {
-            const productsArray = Array.isArray(products) ? products : [];
-            return productsArray
-                .flatMap(product => String(product).split(/\W+/))
-                .map(t => t.toLowerCase())
-                .filter(t => t.length > 3);
-        }
-
-        function score_recommendation(text, ideas = [], products = []) {
-            const normalized_text = normalize_recommendation_text(text).toLowerCase();
-            if (!normalized_text) {
-                return -100;
-            }
-
-            const product_tokens = extract_product_tokens(products);
-            const idea_tokens = extract_idea_tokens(ideas);
-            const matched_product_tokens = product_tokens.filter(token => normalized_text.includes(token));
-            const matched_idea_tokens = idea_tokens.filter(token => normalized_text.includes(token));
-            let score = 0;
-            if(matched_product_tokens.length >= 2)
-            {
-                score += 5; // increase the score by 5 if there is at least 2 matched words
-                // from the users product portfolio
-            }
-            if(matched_idea_tokens.length >= 1)
-            {
-                score += 4; // increase the score by 4 if there is at least one matched word
-                // from the idea list
-            }
-            let total_matched_tokens = matched_product_tokens.length + matched_idea_tokens.length; // add the idea tokens and product tokens to get a total number of tokens
-            score += total_matched_tokens *2; // add the total matched * 2 to the score
-
-            if (normalized_text.length >= 35) {
-                score += 2; // increase the score if the text is greater than or equal 35 characters
-            }
-            if (normalized_text.includes("subscription") || normalized_text.includes("pricing")) {
-                score += 1; // increase the score if the recommendation contains the words subscription and pricing
-            }
-            if (normalized_text.includes("dashboard") || normalized_text.includes("platform")) {
-                score -= 1; // decrease the score if the recommendations contains
-                //the generic keywords dashboard or platform 
-            }
-
-            return score;
-        }
-
-        function is_generic_recommendation(text, ideas = [], products = []) {
-            // normalise the recommendation text and convert to lowercase
-            const normalized_text = normalize_recommendation_text(text).toLowerCase();
-            const generic_phrases = [ // create an array of generic phrases
-                "ai-powered platform",
-                "saas platform",
-                "business management tool",
-                "productivity platform",
-                "marketplace for businesses"
-            ];
-
-            // reject if text is not normalised, includes the word defined, 
-            // includes generic phrases or has a score of less than 6
-            return (
-                !normalized_text ||
-                normalized_text.includes("undefined") ||
-                generic_phrases.some(phrase => normalized_text.includes(phrase)) ||
-                score_recommendation(normalized_text, ideas, products) < 6
-            );
-        }
-
-        function parse_recommendation_output(message, recommendation_count, ideas, products) {
-            const regex = /\n\s*(?=\d+\.\s)/;
-            const split_recomm = String(message || "").split(regex);
-            let formatted_recomm = split_recomm
-                .map(p => p.trim())
-                .filter(p => /^\d+\.\s/.test(p))
-                .map(normalize_recommendation_text);
-
-            if (formatted_recomm.length === 0) {
-                const fallback_recommendation = normalize_recommendation_text(message);
-                if (fallback_recommendation) {
-                    formatted_recomm = [fallback_recommendation];
-                }
-            }
-
-            return Array.from(new Set(formatted_recomm))
-                .filter(text => text.length > 0)
-                .filter(text => !is_generic_recommendation(text, ideas, products))
-                .sort((a, b) => score_recommendation(b, ideas, products) - score_recommendation(a, ideas, products))
-                .slice(0, recommendation_count);
-        }
-
-        async function generate_ranked_recommendations(ideas, products, recommendation_count, prompt, retry_prompt) {
-            const first_result = await app.call_api(prompt);
-            let best_recommendations = parse_recommendation_output(first_result?.response?.trim() || "", recommendation_count, ideas, products);
-
-            if (best_recommendations.length < recommendation_count) {
-                const retry_result = await app.call_api(retry_prompt);
-                const retry_recommendations = parse_recommendation_output(retry_result?.response?.trim() || "", recommendation_count, ideas, products);
-                best_recommendations = Array.from(new Set(best_recommendations.concat(retry_recommendations)))
-                    .sort((a, b) => score_recommendation(b, ideas, products) - score_recommendation(a, ideas, products))
-                    .slice(0, recommendation_count);
-            }
-
-            return best_recommendations;
-        }
-
-        async function generate_new_recommendation(username,products,ideas,recommendation_count = 1, replace_existing = true){
-             try {
-
-                const api_prompt = buildRecommendationsPrompt(ideas, products, recommendation_count);
-                const retry_prompt = buildRecommendationsRetryPrompt(ideas, products, recommendation_count);
-                
-                let next_recommendation_id = 0;
-                const existing_recomms = await the_database.find({
-                    selector: {
-                        username: username,
-                        recomm_text: {$exists: true}
-                    },
-                    fields: ["_id", "_rev", "id"]
-                });
-
-                if (replace_existing) {
-                    for (const doc of existing_recomms.docs) {
-                        try {
-                            await the_database.destroy(doc._id, doc._rev);
-                            console.log("Deleted old recommendation:", doc._id);
-                        } catch (err) {
-                            console.error("Error deleting old recommendation:", err);
-                        }
-                    }
-                } else {
-                    const existing_ids = existing_recomms.docs
-                        .map(doc => Number(doc.id))
-                        .filter(id => !Number.isNaN(id));
-                    next_recommendation_id = existing_ids.length > 0 ? Math.max(...existing_ids) + 1 : existing_recomms.docs.length;
-                }
-                
-                const formatted_recomm = await generate_ranked_recommendations(
-                    ideas,
-                    products,
-                    recommendation_count,
-                    api_prompt,
-                    retry_prompt
-                );
-            // insert the formatted response and the user prompt into the database
-
-            for(let i = 0; i < formatted_recomm.length; i++)
-            {
-                await the_database.insert({
-                    username,
-                    api_prompt,
-                    recomm_text: formatted_recomm[i],
-                    id: replace_existing ? i : next_recommendation_id + i,
-                    date_inserted: new Date().toISOString()
-                });
-            }
-            console.log("Inserted document:", { username,api_prompt,formatted_recomm});
-            
-            // if no content is included in the response
-            if(formatted_recomm.length === 0)
-            {
-                console.log("content is empty");
-            }
-            else
-            {
-                // return the content to the front-end in JSON form
-                return formatted_recomm;
-            }
-            } catch (err) {
-                console.error("Error inserting prompt to database",err);
-                throw err;
-            }
-        }
-       
         app.call_api = async function call_api(prompt)
         {
             // test mode override (fast deterministic responses)

@@ -5,9 +5,26 @@ const add_ideas_button = document.getElementById("add_ideas_button");
 const add_products_button =  document.getElementById("add_product");
 const update_button = document.getElementById("update_button");
 
+// Keep the text below each range input synced with the current slider value.
+function attach_slider_value(slider)
+{
+    const slider_value = slider.parentElement.querySelector(".slider-value");
+    if (!slider_value) {
+        return;
+    }
+    const update_slider_value = () => {
+        slider_value.textContent = `Current value: ${slider.value}`;
+    };
+    update_slider_value();
+    slider.addEventListener("input", update_slider_value);
+}
+
+// Initialise the slider labels for the inputs that are already on the page.
+document.querySelectorAll(".price_range").forEach(attach_slider_value);
+
 document.addEventListener("DOMContentLoaded", () => {
 
-    // function to retrieve the users details
+    // Load the saved profile data so the form is prefilled with the current values.
     async function load_details() {
 
         try {
@@ -54,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 product.querySelector(".product_description").value = profile.products[i].description;
                 product.querySelector(".product_price").value = profile.products[i].prices;
                 product.querySelector(".price_range").value = profile.products[i].price_range;
+                attach_slider_value(product.querySelector(".price_range"));
 
                 industries.forEach((industry) => {
                     // if the industries retrieved for that product includes the value of a particular industry
@@ -107,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const price_range = product.querySelector(".price_range");
                 price_range.value = saved.price_range || price_range.value;
+                attach_slider_value(price_range);
 
 
                 })
@@ -118,11 +137,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     } 
-    // call the load_details function on page load
+    // Populate the form as soon as the page has loaded.
     load_details(); 
     // set the initial number of ideas to 3
     let idea_number = 3;
-    // when the add ideas button is clicked
+    // Add another idea input when the user wants to store more ideas.
     add_ideas_button.addEventListener("click",()=>
     {
     // create a label with black text and specify that it is of class form-label
@@ -143,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     )
     let product_count = 1;
+    // Clone the product block so the user can add another product portfolio entry.
     add_products_button.addEventListener("click",()=>{
     const product = document.querySelector(".individual-product");
     const duplicate = product.cloneNode(true); // clone the product div if the button is clicked
@@ -160,6 +180,11 @@ document.addEventListener("DOMContentLoaded", () => {
             input.checked = false; // if checkbox, set the checked attribute to be false 
         }
     });
+    const slider = duplicate.querySelector(".price_range");
+    if (slider) {
+        slider.value = slider.min || "0";
+        attach_slider_value(slider);
+    }
 
     // append the cloned product to the product portfolio
     product_portfolio.appendChild(duplicate);
@@ -170,14 +195,13 @@ document.addEventListener("DOMContentLoaded", () => {
 }); 
 
 update_button.addEventListener("click", async ()=>{
-// function to update the profile asynchronously
+// Send the updated profile data to the backend.
 async function update_profile()
 {
     const original_button_text = update_button.textContent;
     update_button.disabled = true;
     update_button.textContent = "Saving...";
     const spinner = create_spinner();
-    spinner.classList.add("text-center");
     document.body.appendChild(spinner);
     try{
         // create an array of trimmed values fpr each idea input
@@ -289,7 +313,7 @@ async function update_profile()
 
         // once a successfull response is retrieved, redirect the user to the homepage
         window.showActionStatus("Profile updated successfully.", "success");
-        window.location.href = "homepage.html";
+        window.location.href = "homepage.html?updated=true";
         
 
     }
@@ -309,6 +333,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 let prod_count = 1;
 const add_competitor_product = document.querySelector(".add_product");
 const add_competitor = document.getElementById("add_competitor");
+    // Add another product block to the competitor card that triggered the click.
     function add_product(){
     const compBlock = this.closest(".individual-competitor");
     const competitor_product = compBlock.querySelector(".individual-product");
@@ -330,6 +355,10 @@ const add_competitor = document.getElementById("add_competitor");
             input.value = input.min || "0";
         }
     });
+    const slider = duplicate.querySelector(".price_range");
+    if (slider) {
+        attach_slider_value(slider);
+    }
 
     const parent = competitor_product.parentNode;
     parent.appendChild(duplicate);
@@ -340,6 +369,7 @@ add_competitor_product?.addEventListener("click",add_product);
 
 let comp_count = 1;
 add_competitor?.addEventListener("click",()=>{
+    // Clone the full competitor block so the user can track another competitor.
     const compBlock = document.querySelector("#competitor_div .individual-competitor");
      const duplicate = compBlock.cloneNode(true);
      
@@ -359,6 +389,7 @@ add_competitor?.addEventListener("click",()=>{
             input.value = input.min || "0";
         }
     });
+     duplicate.querySelectorAll(".price_range").forEach(attach_slider_value);
      duplicate.querySelector(".add_product").addEventListener("click",add_product);
 
     const competitor_div = document.getElementById("competitor_div");
@@ -371,11 +402,15 @@ add_competitor?.addEventListener("click",()=>{
 function create_spinner()
 {
     const loading_spinner = document.createElement("div");
-    loading_spinner.classList.add("spinner-border","text-success","justify-content-center","d-flex");
+    loading_spinner.classList.add("d-flex","justify-content-center","align-items-center","w-100");
+    loading_spinner.style.minHeight = "200px";
     loading_spinner.role = "status";
+    const spinner_icon = document.createElement("div");
+    spinner_icon.classList.add("spinner-border","text-success");
     const spinner_span = document.createElement("span");
     spinner_span.classList.add("visually-hidden");
     spinner_span.textContent = "Saving your details and generating your recommendations...";
-    loading_spinner.appendChild(spinner_span);
+    spinner_icon.appendChild(spinner_span);
+    loading_spinner.appendChild(spinner_icon);
     return loading_spinner;
 }

@@ -169,6 +169,22 @@ p {
     padding-top: 0;
 }
 
+.competitor-modal-dialog {
+    max-width: min(1100px, 95vw);
+}
+
+.competitor-modal-table {
+    table-layout: fixed;
+}
+
+.competitor-modal-table th,
+.competitor-modal-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
+}
+
 /* BUTTONS --------------------------------------------------- */
 
 button {

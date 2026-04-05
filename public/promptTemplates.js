@@ -66,7 +66,10 @@ Sources: https://example1.com https://example2.com
 
 Rules:
 - Sources must be on the same line and include at least 2 real URLs
-- Use real sources related to the product
+- Use real sources that directly support the listed strengths and weaknesses
+- Prefer evidence pages such as product feature pages, pricing pages, help docs, comparison pages, review pages, case studies, or analyst pages
+- Do not use generic homepage links unless the exact evidence is clearly on that page
+- Each source should help a user verify a stated strength or weakness
 - No text before or after these lines
 - No markdown`;
 }
