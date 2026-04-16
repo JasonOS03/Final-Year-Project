@@ -171,18 +171,26 @@
             accordionItem.appendChild(collapseAccordion);
             inner.appendChild(accordionItem);
 
-            // Pull the main fields out of the returned product insight text.
+            // Extract the strengths from the data returned by the backend
+            // Search for the strenghts text followed by a dash or colon
+            // everything up to a newline is captured
+            // undefined is returned if there is no match
             const strengths = productInsights.match(/Strengths[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            // extract the weaknesses
             const weaknesses = productInsights.match(/Weaknesses[:\-–]\s*([^\n]+)/i)?.[1] || "undefined";
+            // extract the source links provided, with everything including newlines captured
             const sources = productInsights.match(/Sources[:\-–]\s*([\s\S]*?)(?=\n[A-Z][a-z]+[:\-–]|$)/i)?.[1]?.trim() ||
                 productInsights.match(/Sources[:\-–]\s*(.+)/i)?.[1] ||
                 "";
+            // extract the URL's and match the data with the http:// or https:// substring   
             const urls = sources.match(/https?:\/\/\S+/g) || [];
-            const clickableSources = urls.length > 0
+            // create clickable links for the urls
+            const clickableSources = urls.length > 0 
+                // create a new array of href links from the urls
                 ? urls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join("<br>")
                 : sources && sources.length > 0
                     ? sources
-                    : "No sources provided";
+                    : "No sources provided"; // fallback message if no sources were provided
 
             accordionBody.innerHTML = `
                     <label>Strengths: </label>

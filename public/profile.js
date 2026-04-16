@@ -38,8 +38,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const username = document.getElementById("update_uname");
             const password = document.getElementById("update_password");
             const email =  document.getElementById("update_email");
-            const idea_inputs = document.querySelectorAll(".input-idea");
-            const products = document.querySelectorAll("#product_portfolio_div .individual-product");
+
+            let idea_inputs = document.querySelectorAll(".input-idea");
+            while (idea_inputs.length < profile.ideas.length) {
+                    add_ideas_button.click();
+                    idea_inputs = document.querySelectorAll(".input-idea");  // reuse your existing cloning logic
+                }
+
+
+            let products = document.querySelectorAll("#product_portfolio_div .individual-product");
+
+                while (products.length < profile.products.length) {
+                    add_products_button.click();
+                    products = document.querySelectorAll("#product_portfolio_div .individual-product");  // reuse your existing cloning logic
+                }
+
 
                 // value in the document becomes the retrieved value
                 username.value = profile.username;
@@ -88,7 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
             }
-            const competitors  = document.querySelectorAll(".individual-competitor");
+            let competitors  = document.querySelectorAll(".individual-competitor");
+                while (competitors.length < profile.user_entered_competitors.length) {
+                    add_competitor.click();
+                    competitors = document.querySelectorAll(".individual-competitor");  // reuse your existing cloning logic
+                }
+
                 for(let i = 0; i < competitors.length;i++){
                 if (!profile.user_entered_competitors || !profile.user_entered_competitors[i]){ continue;}
                 const comp = competitors[i];
@@ -101,9 +119,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 const sources = comp.querySelector(".link-source");
                 sources.value = profile.user_entered_competitors[i].source
 
-                const products = comp.querySelectorAll(".individual-product");
+               let competitorProducts = comp.querySelectorAll(".individual-product");
+
+                const savedProducts = profile.user_entered_competitors[i].products || [];
+
+                while (competitorProducts.length < savedProducts.length) {
+                    comp.querySelector(".add-competitor-product").click();
+                    competitorProducts = comp.querySelectorAll(".individual-product");
+                }
+
+                const products = competitorProducts;
                 products.forEach((product,j) =>{
-                const saved = profile.user_entered_competitors[i].products?.[j];
+                const saved = savedProducts[j];
                 if (!saved) {
                     return;
                 }
@@ -157,8 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
      idea_input.placeholder = "Please enter a product/service idea";
 
     // append the label and idea input boxes to the idea list
-     idea_list.appendChild(label);
-     idea_list.appendChild(idea_input);
+     idea_list.insertBefore(label,add_ideas_button);
+     idea_list.insertBefore(idea_input,add_ideas_button);
     }
     )
     let product_count = 1;
@@ -187,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // append the cloned product to the product portfolio
-    product_portfolio.appendChild(duplicate);
+    product_portfolio.insertBefore(duplicate,add_products_button);
 
 })
 
@@ -393,7 +420,7 @@ add_competitor?.addEventListener("click",()=>{
      duplicate.querySelector(".add_product").addEventListener("click",add_product);
 
     const competitor_div = document.getElementById("competitor_div");
-    competitor_div.appendChild(duplicate);
+    competitor_div.insertBefore(duplicate,add_competitor);
 
      
 });

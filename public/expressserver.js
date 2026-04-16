@@ -637,6 +637,7 @@ app.use(
     }
     }
 )
+
 // POST route for handling user profile updates
 app.post("/update_profile",async (request,response) =>{
 
@@ -649,13 +650,39 @@ app.post("/update_profile",async (request,response) =>{
                 }
 
                 // Remove whitespace-only competitors
+                // Normalise competitor entries (accept strings OR objects)
                 const cleanedCompetitors = competitors
-                    .filter(c => typeof c === "string" && c.trim().length > 0);
+                    .map(c => {
+                        if (!c) return ""; // handles null/undefined
 
-                // Reject mixed-type competitor arrays
-                if (cleanedCompetitors.length !== competitors.length) {
-                    return response.status(400).json({ error: "Competitor names must be non-empty strings" });
+                        if (typeof c === "string") {
+                            return c.trim();
+                        }
+
+                        if (typeof c === "object") {
+                            // Try all possible fields your UI might send
+                            const name =
+                                c.competitor ||        // <-- THIS is the field your frontend uses
+                                c.competitorName ||
+                                c.name ||
+                                c.title ||
+                                c.productName ||
+                                "";
+
+                            return String(name).trim();
+                        }
+
+                        return "";
+                    })
+                    .filter(name => name.length > 0);
+
+                // Reject only if *all* competitors are invalid
+                if (competitors.length > 0 && cleanedCompetitors.length === 0) {
+                    return response.status(400).json({
+                        error: "Competitor names must be non-empty strings or objects with a name field"
+                    });
                 }
+
 
                 // query the profile details
                 const [ideas_query, product_query,competitor_query,summary_query] = await Promise.all([

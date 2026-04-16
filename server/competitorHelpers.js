@@ -67,15 +67,16 @@ async function getOrGenerateAccordionInsight({
         selector: {
             username,
             product,
-            insights: { "$exists": true }
+            insights: { "$exists": true } // product insight exists
         },
         fields: [
-            "insights"
+            "insights" // return the insights field
         ]
     });
 
     if (insightsQuery.docs.length >= 1) {
-        return insightsQuery.docs[0].insights;
+        return insightsQuery.docs[0].insights; // return the insight 
+        // if there is at least one matching document
     }
 
     const insightsPrompt = buildInsightsPrompt(product);

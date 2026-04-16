@@ -20,7 +20,7 @@ function showToast(message)
 
     toast_text = document.createElement("strong");
     toast_text.classList.add("me-auto");
-    toast_text.textContent = "Registration successful! Please log in to view your recommendations";
+    toast_text.textContent = "Notification";
 
     const close_toast = document.createElement("button");
     close_toast.classList.add("btn-close","btn-close-white");
